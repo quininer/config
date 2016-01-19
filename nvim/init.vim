@@ -5,9 +5,10 @@ let g:mapleader = ','
 
 syntax on
 
-set encoding=utf-8
-set hidden
 set nocompatible
+set encoding=utf-8
+set history=2048
+set hidden
 set autoread
 set shortmess=atI
 set mouse-=a
@@ -54,6 +55,11 @@ if has('persistent_undo')
 	set undoreload=10000
 	set undofile
 	set undodir=/tmp/vimundo/
+endif
+
+" auto viminfo
+if has("autocmd")
+  au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 endif
 
 

@@ -100,17 +100,45 @@ let g:solarized_contrast="normal"
 let g:solarized_visibility="normal"
 
 
-" == Language (highlight & hint) ==
-
-" Python
-Plug 'mathieui/pyflakes3-vim'
-let g:pyflakes_use_quickfix = 0
+" == Language highlight ==
 
 " fish
 Plug 'dag/vim-fish'
 
 " toml
 Plug 'cespare/vim-toml'
+
+
+" == Language (semantic) ==
+
+" YCM TODO
+" Plug 'Valloric/YouCompleteMe'
+" let g:ycm_goto_buffer_command = 'horizontal-split'
+" nnoremap <leader>jd :YcmCompleter GoToDefinitionElseDeclaration<CR>
+" nnoremap <leader>gd :YcmCompleter GoToDeclaration<CR>
+" let g:ycm_key_invoke_completion = '<C-j>'
+" let g:ycm_filetype_blacklist = {
+" 	\ 'conque_term': 1,
+" 	\ 'python': 1
+" 	\ }
+
+" Python
+Plug 'mathieui/pyflakes3-vim'
+let g:pyflakes_use_quickfix = 0
+
+" Python
+Plug 'davidhalter/jedi-vim'
+let g:jedi#use_splits_not_buffers = 'top'
+let g:jedi#popup_on_dot = 1
+let g:jedi#popup_select_first = 1
+let g:jedi#goto_assignments_command = '<leader>jd'
+let g:jedi#goto_definitions_command = '<leader>gd'
+let g:jedi#documentation_command = 'K'
+let g:jedi#usages_command = '<leader>u'
+let g:jedi#completions_command = '<C-j>'
+let g:jedi#rename_command = '<leader>r'
+let g:jedi#force_py_version = 3
+autocmd FileType python setlocal completeopt-=preview
 
 
 " == Utils ==
