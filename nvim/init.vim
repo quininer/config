@@ -30,7 +30,9 @@ set softtabstop=4
 set smarttab
 set formatoptions+=m
 set formatoptions+=B
+set viminfo^=%
 
+" relative line number
 set relativenumber number
 au FocusLost * :set norelativenumber number
 au FocusGained * :set relativenumber
@@ -38,10 +40,14 @@ autocmd InsertEnter * :set norelativenumber number
 autocmd InsertLeave * :set relativenumber
 
 filetype on
+filetype indent on
 filetype plugin on
+filetype plugin indent on
 
+" backup & undofile
 set history=2048
 set backup
+set backupext=.bak
 set backupdir=/tmp/vimbk/
 if has('persistent_undo')
 	set undolevels=1000
@@ -50,53 +56,35 @@ if has('persistent_undo')
 	set undodir=/tmp/vimundo/
 endif
 
+
 " == Plugins ==
 
-call plug#begin('~/.config/nvim/plugged')
-
-Plug 'terryma/vim-multiple-cursors'
-Plug 'kien/ctrlp.vim'
-" Plug 'airblade/vim-gitgutter'
-
-" Plug 'sjl/gundo.vim'
-" nnoremap <leader>h :GundoToggle<CR>
-
-Plug 'bling/vim-airline'
-Plug 'kien/rainbow_parentheses.vim'
-
-Plug 'altercation/vim-colors-solarized'
-let g:solarized_termcolors=256
-let g:solarized_termtrans=1
-let g:solarized_contrast="normal"
-let g:solarized_visibility="normal"
-
-Plug 'scrooloose/nerdtree'
-map <leader>n :NERDTreeToggle<CR>
-let NERDTreeHighlightCursorline=1
-let g:NERDTreeMapOpenSplit = 's'
-let g:NERDTreeMapOpenVSplit = 'v'
-
-Plug 'vim-ctrlspace/vim-ctrlspace'
-let g:CtrlSpaceDefaultMappingKey = "<C-o>"
-let g:airline_exclude_preview = 1
-
-Plug 'oplatek/Conque-Shell'
-nnoremap <leader>sh	:ConqueTermSplit bash<CR>
-
-Plug 'bronson/vim-trailing-whitespace'
-map <leader><space>	:FixWhitespace<cr>
-
-call plug#end()
+if filereadable(expand("~/.config/nvim/plugs.vim"))
+	source ~/.config/nvim/plugs.vim
+endif
 
 
 " == key ==
 
+" jump
 nnoremap k  gk
 nnoremap gk k
 nnoremap j  gj
 nnoremap gj j
 
+" long undo
+nnoremap U <C-r>
+" sudo write
+cmap www w !sudo tee >/dev/null %
+" quick quit
+nnoremap <leader>q	:q<CR>
+" quick esc
+inoremap kj <ESC>
 inoremap <A-space> <ESC>
+" quick command
+nnoremap ;	:
+" nohls
+noremap <silent><leader>/	:nohls<CR>
 
 function! HideNumber()
     if(&relativenumber == &number)
@@ -108,29 +96,37 @@ function! HideNumber()
     endif
     set number?
 endfunc
+" <F2> hide line number
 nnoremap <F2>	:call HideNumber()<CR>
+" <F3> ..
+nnoremap <F3>	:set list! list?<CR>
+" <F4> wrap newline
+nnoremap <F4>	:set wrap! wrap?<CR>
+" <F5> paste mode
+set pastetoggle=<F5>
+au InsertLeave * set nopaste
 
+" window move
 map <A-j>	<C-W>j
 map <A-k>	<C-W>k
 map <A-h>	<C-W>h
 map <A-l>	<C-W>l
 
-nnoremap ;	:
-noremap <silent><leader>/	:nohls<CR>
-
-nnoremap <C-t>	:tabnew<CR>
-inoremap <C-t>	<Esc>:tabnew<CR>
-noremap <left>	:bp<CR>
-noremap <right>	:bn<CR>
-
+" window size
 nmap w=	:resize +3<CR>
 nmap w-	:resize -3<CR>
 nmap w[	:vertical resize -3<CR>
 nmap w]	:vertical resize +3<CR>
 
-nnoremap <leader>q	:q<CR>
-
-cmap www w !sudo tee >/dev/null %
+" tab & buffer
+nnoremap <C-t>	:tabnew<CR>
+inoremap <C-t>	<Esc>:tabnew<CR>
+map <A-=>		:tabnext<cr>
+map <A-->		:tabprev<cr>
+nnoremap <A-[>	:bprevious<cr>
+nnoremap <A-]>	:bnext<cr>
+noremap <left>	:bp<CR>
+noremap <right>	:bn<CR>
 
 
 " == UI ==
@@ -142,4 +138,37 @@ set t_Co=256
 
 " == utils ==
 
+" set tab
+autocmd FileType python set tabstop=4 shiftwidth=4 expandtab ai
+
+" use clipboard
 set clipboard=unnamed
+
+" mutt
+au BufRead /tmp/mutt-* set tw=72
+
+" ydcv
+" translate the word under cursor
+function! SearchWord()
+	echo system('ydcv --', expand("<cword>"))
+endfunction
+" translate selected text
+function! SearchWord_v(type, ...)
+	let sel_save = &selection
+	let &selection = "inclusive"
+	let reg_save = @@
+	if a:0
+		silent exe "normal! `<" . a:type . "`>y"
+	elseif a:type == 'line'
+		silent exe "normal! '[V']y"
+	elseif a:type == 'block'
+		silent exe "normal! `[\<C-V>`]y"
+	else
+		silent exe "normal! `[v`]y"
+	endif
+	echo system('ydcv --', @@)
+	let &selection = sel_save
+	let @@ = reg_save
+endfunction
+nnoremap <Leader>d :call SearchWord()<CR>
+vnoremap <Leader>d :<C-U>call SearchWord_v(visualmode(), 1)<cr>
