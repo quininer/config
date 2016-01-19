@@ -102,6 +102,9 @@ let g:solarized_visibility="normal"
 
 " == Language highlight ==
 
+" Rust
+Plug 'rust-lang/rust.vim'
+
 " fish
 Plug 'dag/vim-fish'
 
@@ -111,16 +114,11 @@ Plug 'cespare/vim-toml'
 
 " == Language (semantic) ==
 
-" YCM TODO
-" Plug 'Valloric/YouCompleteMe'
-" let g:ycm_goto_buffer_command = 'horizontal-split'
-" nnoremap <leader>jd :YcmCompleter GoToDefinitionElseDeclaration<CR>
-" nnoremap <leader>gd :YcmCompleter GoToDeclaration<CR>
-" let g:ycm_key_invoke_completion = '<C-j>'
-" let g:ycm_filetype_blacklist = {
-" 	\ 'conque_term': 1,
-" 	\ 'python': 1
-" 	\ }
+" Rust
+Plug 'racer-rust/vim-racer'
+let g:racer_cmd = "racer"
+let $RUST_SRC_PATH="/home/quininer/.source/rust/src"
+autocmd FileType rust inoremap <C-j>		<C-x><C-o>
 
 " Python
 Plug 'mathieui/pyflakes3-vim'
