@@ -70,7 +70,7 @@ if filereadable(expand("~/.config/nvim/plugs.vim"))
 endif
 
 
-" == key ==
+" == Key ==
 
 " jump
 nnoremap k  gk
@@ -142,7 +142,7 @@ colorscheme solarized
 set t_Co=256
 
 
-" == utils ==
+" == Utils ==
 
 " set tab
 autocmd FileType python set tabstop=4 shiftwidth=4 expandtab ai

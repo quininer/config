@@ -100,7 +100,7 @@ let g:solarized_contrast="normal"
 let g:solarized_visibility="normal"
 
 
-" == Language highlight ==
+" == Language (highlight) ==
 
 " Rust
 Plug 'rust-lang/rust.vim'
@@ -113,6 +113,9 @@ Plug 'cespare/vim-toml'
 
 
 " == Language (semantic) ==
+" ,jd	Jump Location (option)
+" ,gd	Goto Definition
+" C-j	Completion
 
 " Rust
 Plug 'racer-rust/vim-racer'
