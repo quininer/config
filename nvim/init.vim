@@ -3,6 +3,10 @@
 let mapleader = ','
 let g:mapleader = ','
 
+if &shell =~# 'fish$'
+    set shell=sh
+endif
+
 syntax on
 
 set nocompatible
@@ -62,6 +66,10 @@ if has("autocmd")
   au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 endif
 
+" backspace move
+set backspace=eol,start,indent
+set whichwrap+=<,>,h,l
+
 
 " == Plugins ==
 
@@ -70,7 +78,7 @@ if filereadable(expand("~/.config/nvim/plugs.vim"))
 endif
 
 
-" == Key ==
+" == key ==
 
 " jump
 nnoremap k  gk
@@ -142,7 +150,7 @@ colorscheme solarized
 set t_Co=256
 
 
-" == Utils ==
+" == utils ==
 
 " set tab
 autocmd FileType python set tabstop=4 shiftwidth=4 expandtab ai

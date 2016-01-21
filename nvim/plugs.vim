@@ -100,7 +100,7 @@ let g:solarized_contrast="normal"
 let g:solarized_visibility="normal"
 
 
-" == Language (highlight) ==
+" == Language highlight ==
 
 " Rust
 Plug 'rust-lang/rust.vim'
