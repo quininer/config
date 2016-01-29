@@ -63,7 +63,9 @@ au FileType python let b:delimitMate_nesting_quotes = ['"']
 " == UI ==
 
 " status bar
-Plug 'bling/vim-airline'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+let g:airline_theme="luna"
 
 " brackets highlight
 Plug 'kien/rainbow_parentheses.vim'
@@ -94,10 +96,8 @@ au Syntax * RainbowParenthesesLoadBraces
 
 " theme
 Plug 'altercation/vim-colors-solarized'
-let g:solarized_termcolors=256
-let g:solarized_termtrans=1
-let g:solarized_contrast="normal"
-let g:solarized_visibility="normal"
+" let g:solarized_termcolors=256
+" let g:solarized_termtrans=1
 
 
 " == Language highlight ==
