@@ -146,5 +146,6 @@ autocmd FileType python setlocal completeopt-=preview
 
 Plug 'vim-scripts/fcitx.vim'
 Plug 'vim-scripts/DrawIt'
+Plug 'fidian/hexmode'
 
 call plug#end()
