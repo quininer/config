@@ -119,8 +119,8 @@ Plug 'cespare/vim-toml'
 
 " Rust
 Plug 'racer-rust/vim-racer'
-let g:racer_cmd = "racer"
-let $RUST_SRC_PATH="/home/quininer/.source/rust/src"
+let g:racer_cmd = 'racer'
+let $RUST_SRC_PATH='/home/quininer/.source/rust/src'
 autocmd FileType rust inoremap <C-j>		<C-x><C-o>
 
 " Python
