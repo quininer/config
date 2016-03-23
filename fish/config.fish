@@ -9,10 +9,13 @@ source $OMF_PATH/init.fish
 
 set -x PATH /usr/bin /home/quininer/.cargo/bin /home/quininer/.local/bin
 
+# config
+set -gx SSH_ASKPASS (which ksshaskpass)
 set -gx EDITOR (which vi)
 sh ~/.login.sh
 fish_vi_mode
 
+# alias
 function ls
 	exa $argv
 end

@@ -53,12 +53,12 @@ filetype plugin indent on
 set history=2048
 set backup
 set backupext=.bak
-set backupdir=/tmp/vimbk/
+set backupdir=~/.cache/vimbk/
 if has('persistent_undo')
 	set undolevels=1000
 	set undoreload=10000
 	set undofile
-	set undodir=/tmp/vimundo/
+	set undodir=~/.cache/vimundo/
 endif
 
 " auto viminfo
@@ -156,7 +156,7 @@ set t_Co=256
 autocmd FileType python set tabstop=4 shiftwidth=4 expandtab ai
 
 " use clipboard
-set clipboard=unnamed
+set clipboard+=unnamedplus
 
 " mutt
 au BufRead /tmp/mutt-* set tw=72
