@@ -7,8 +7,8 @@ if &shell =~# 'fish$'
     set shell=sh
 endif
 
-syntax on
 
+syntax on
 set nocompatible
 set encoding=utf-8
 set history=2048
