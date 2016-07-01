@@ -89,7 +89,7 @@ let g:rbpt_colorpairs = [
 	\ ]
 let g:rbpt_max = 40
 let g:rbpt_loadcmd_toggle = 0
-au VimEnter * RainbowParenthesesToggle
+" au VimEnter * RainbowParenthesesToggle
 " au Syntax * RainbowParenthesesLoadRound
 " au Syntax * RainbowParenthesesLoadSquare
 " au Syntax * RainbowParenthesesLoadBraces
@@ -97,7 +97,7 @@ au VimEnter * RainbowParenthesesToggle
 " theme
 Plug 'altercation/vim-colors-solarized'
 " let g:solarized_termcolors=256
-" let g:solarized_termtrans=1
+let g:solarized_termtrans=1
 
 
 " == Language highlight ==
