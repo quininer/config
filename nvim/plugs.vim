@@ -111,6 +111,12 @@ Plug 'dag/vim-fish'
 " toml
 Plug 'cespare/vim-toml'
 
+" ProVerif
+Plug 'smelc/proverif.vim'
+au BufRead,BufNewFile *.pv setfiletype proverif
+au BufRead,BufNewFile *.pvf setfiletype proverif
+autocmd FileType proverif source ~/.config/nvim/plugged/proverif.vim/proverif.vim
+
 
 " == Language (semantic) ==
 " ,jd	Jump Location (option)

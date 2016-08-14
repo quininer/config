@@ -73,7 +73,7 @@ set whichwrap+=<,>,h,l
 
 " == Plugins ==
 
-if filereadable(expand("~/.config/nvim/plugs.vim"))
+if filereadable(expand('~/.config/nvim/plugs.vim'))
 	source ~/.config/nvim/plugs.vim
 endif
 
