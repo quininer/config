@@ -147,6 +147,15 @@ let g:jedi#rename_command = '<leader>r'
 let g:jedi#force_py_version = 3
 autocmd FileType python setlocal completeopt-=preview
 
+" Markdown
+" function! BuildComposer(info)
+" "  if a:info.status != 'unchanged' || a:info.force
+" "    !cargo build --release
+" "    UpdateRemotePlugins
+" "  endif
+" endfunction
+"
+" Plug 'euclio/vim-markdown-composer', { 'do': function('BuildComposer') }
 
 " == Utils ==
 
