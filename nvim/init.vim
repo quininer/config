@@ -135,12 +135,16 @@ nmap w]	:vertical resize +3<CR>
 " tab & buffer
 nnoremap <C-t>	:tabnew<CR>
 inoremap <C-t>	<Esc>:tabnew<CR>
-map <A-=>		:tabnext<cr>
-map <A-->		:tabprev<cr>
-nnoremap <A-[>	:bprevious<cr>
-nnoremap <A-]>	:bnext<cr>
+map <A-[>		:tabnext<cr>
+map <A-]>		:tabprev<cr>
+" nnoremap <A-[>	:bprevious<cr>
+" nnoremap <A-]>	:bnext<cr>
 noremap <left>	:bp<CR>
 noremap <right>	:bn<CR>
+
+" terminal
+map <leader>s	:terminal fish<CR>
+tnoremap <A-space> <C-\><C-n>
 
 
 " == UI ==

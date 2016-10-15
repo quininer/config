@@ -22,12 +22,12 @@ let g:CtrlSpaceDefaultMappingKey = "<C-o>"
 let g:airline_exclude_preview = 1
 
 " call shell
-Plug 'oplatek/Conque-Shell'
-nnoremap <leader>sh	:ConqueTermSplit bash<CR>
-nnoremap <leader>py	:ConqueTermSplit ipython<CR>
+" Plug 'oplatek/Conque-Shell'
+" nnoremap <leader>sh	:ConqueTermSplit bash<CR>
+" nnoremap <leader>py	:ConqueTermSplit ipython<CR>
 
 " file search
-Plug 'kien/ctrlp.vim'
+Plug 'ctrlpvim/ctrlp.vim'
 let g:ctrlp_map = '<leader>p'
 let g:ctrlp_cmd = 'CtrlP'
 map <leader>f	:CtrlP<CR>
@@ -53,7 +53,7 @@ let g:gitgutter_map_keys = 0
 " trailing whitespace hint & remove
 Plug 'bronson/vim-trailing-whitespace'
 map <leader><space>	:FixWhitespace<cr>
-let g:extra_whitespace_ignored_filetypes = ['unite', 'mkd', 'conque_term']
+let g:extra_whitespace_ignored_filetypes = ['unite', 'mkd']
 
 " auto brackets/quotes
 Plug 'Raimondi/delimitMate'

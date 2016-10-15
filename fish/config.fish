@@ -7,7 +7,7 @@ set -gx OMF_PATH "/home/quininer/.local/share/omf"
 # Load oh-my-fish configuration.
 source $OMF_PATH/init.fish
 
-set -x PATH /usr/bin /home/quininer/.cargo/bin /home/quininer/.local/bin
+set -x PATH /usr/bin /home/quininer/.cargo/bin /home/quininer/.local/bin /usr/lib/emscripten /usr/lib/emscripten-fastcomp
 
 # config
 set -gx SSH_ASKPASS (which ksshaskpass)
