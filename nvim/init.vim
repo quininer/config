@@ -4,9 +4,8 @@ let mapleader = ','
 let g:mapleader = ','
 
 if &shell =~# 'fish$'
-    set shell=sh
+    set shell=bash
 endif
-
 
 syntax on
 set nocompatible

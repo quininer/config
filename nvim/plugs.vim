@@ -39,10 +39,9 @@ nnoremap <Leader>fff	:execute 'CtrlPFunky ' . expand('<cword>')<Cr>
 let g:ctrlp_funky_syntax_highlight = 1
 let g:ctrlp_extensions = ['funky']
 
-" undo manager * not support nvim?
-" Plug 'sjl/gundo.vim'
-" nnoremap <leader>h :GundoToggle<CR>
-
+Plug 'simnalamburt/vim-mundo'
+let g:mundo_prefer_python3 = 1
+nnoremap <leader>h :MundoToggle<CR>
 
 " == Operation (passive) ==
 
