@@ -187,5 +187,10 @@ function! SearchWord_v(type, ...)
 	let &selection = sel_save
 	let @@ = reg_save
 endfunction
-nnoremap <Leader>d :call SearchWord()<CR>
-vnoremap <Leader>d :<C-U>call SearchWord_v(visualmode(), 1)<cr>
+nnoremap <Leader>a :call SearchWord()<CR>
+vnoremap <Leader>a :<C-U>call SearchWord_v(visualmode(), 1)<cr>
+
+" justfile
+augroup filetypedetect
+  au BufNewFile,BufRead justfile setf make
+augroup END

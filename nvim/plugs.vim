@@ -31,6 +31,9 @@ Plug 'ctrlpvim/ctrlp.vim'
 let g:ctrlp_map = '<leader>p'
 let g:ctrlp_cmd = 'CtrlP'
 map <leader>f	:CtrlP<CR>
+set wildignore+=*/target/*,*.so,*.swp,*.zip     " MacOSX/Linux
+set wildignore+=*\\target\\*,*.swp,*.zip,*.exe  " Windows
+let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|cargo)$'
 
 " string search, ctrlp based
 Plug 'tacahiroy/ctrlp-funky'
@@ -38,6 +41,7 @@ nnoremap <leader>ff		:CtrlPFunky<CR>
 nnoremap <Leader>fff	:execute 'CtrlPFunky ' . expand('<cword>')<Cr>
 let g:ctrlp_funky_syntax_highlight = 1
 let g:ctrlp_extensions = ['funky']
+let g:ctrlp_funky_multi_buffers = 1
 
 Plug 'simnalamburt/vim-mundo'
 let g:mundo_prefer_python3 = 1
@@ -52,7 +56,7 @@ let g:gitgutter_map_keys = 0
 " trailing whitespace hint & remove
 Plug 'bronson/vim-trailing-whitespace'
 map <leader><space>	:FixWhitespace<cr>
-let g:extra_whitespace_ignored_filetypes = ['unite', 'mkd']
+let g:extra_whitespace_ignored_filetypes = ['unite', 'mkd', 'mundo', 'diff']
 
 " auto brackets/quotes
 Plug 'Raimondi/delimitMate'
@@ -125,7 +129,10 @@ autocmd FileType proverif source ~/.config/nvim/plugged/proverif.vim/proverif.vi
 " Rust
 Plug 'racer-rust/vim-racer'
 let g:racer_cmd = 'racer'
+let g:racer_experimental_completer = 1
 let $RUST_SRC_PATH='/home/quininer/apps/rust/src'
+au FileType rust nmap <leader>gd			:split<CR>:call racer#GoToDefinition()<CR>
+au FileType rust nmap K						:call racer#ShowDocumentation()<CR>
 autocmd FileType rust inoremap <C-j>		<C-x><C-o>
 
 " Python
@@ -161,5 +168,6 @@ autocmd FileType python setlocal completeopt-=preview
 Plug 'vim-scripts/fcitx.vim'
 Plug 'vim-scripts/DrawIt'
 Plug 'fidian/hexmode'
+" Plug 'ticki/rust-cute-vim'
 
 call plug#end()
