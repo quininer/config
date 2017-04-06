@@ -43,6 +43,9 @@ let g:ctrlp_funky_syntax_highlight = 1
 let g:ctrlp_extensions = ['funky']
 let g:ctrlp_funky_multi_buffers = 1
 
+" skim
+" Plug 'lotabout/skim'
+
 Plug 'simnalamburt/vim-mundo'
 let g:mundo_prefer_python3 = 1
 nnoremap <leader>h :MundoToggle<CR>
@@ -126,14 +129,45 @@ autocmd FileType proverif source ~/.config/nvim/plugged/proverif.vim/proverif.vi
 " ,gd	Goto Definition
 " C-j	Completion
 
+" Language Client
+Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
+" (Optional) Multi-entry selection UI.
+Plug 'Shougo/denite.nvim'
+" (Optional) Showing function signature and inline doc.
+Plug 'Shougo/echodoc.vim'
+" (Optional) Completion integration with deoplete.
+Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+let g:deoplete#enable_at_startup = 1
+let g:deoplete#enable_smart_case = 1
+let g:deoplete#disable_auto_complete = 1
+
+" Required for operations modifying multiple buffers like rename.
+set hidden
+let g:LanguageClient_serverCommands = {
+    \ 'rust': ['cargo', 'run', '--release', '--manifest-path=/home/quininer/apps/rls/Cargo.toml'],
+    \ }
+au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
+au FileType rust nnoremap <silent><leader>gd	:call LanguageClient_textDocument_definition()<CR>
+au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
+au FileType rust inoremap <silent><expr><C-j>	<TAB>
+	\ pumvisible() ? "\<C-n>" :
+	\ <SID>check_back_space() ? "\<TAB>" :
+	\ deoplete#manual_complete()
+
+function! s:check_back_space() abort "{{{
+	let col = col('.') - 1
+	return !col || getline('.')[col - 1]  =~ '\s'
+endfunction"}}}
+
+
 " Rust
-Plug 'racer-rust/vim-racer'
-let g:racer_cmd = 'racer'
-let g:racer_experimental_completer = 1
-let $RUST_SRC_PATH='/home/quininer/apps/rust/src'
-au FileType rust nmap <leader>gd			:split<CR>:call racer#GoToDefinition()<CR>
-au FileType rust nmap K						:call racer#ShowDocumentation()<CR>
-autocmd FileType rust inoremap <C-j>		<C-x><C-o>
+" Plug 'racer-rust/vim-racer'
+" let g:racer_cmd = 'racer'
+" let g:racer_experimental_completer = 1
+" let $RUST_SRC_PATH='/home/quininer/apps/rust/src'
+" au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
+" au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
+" au FileType rust inoremap	<C-j>			<C-x><C-o>
 
 " Python
 Plug 'mathieui/pyflakes3-vim'

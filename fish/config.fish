@@ -10,7 +10,7 @@ source $OMF_PATH/init.fish
 set -x PATH /usr/bin /home/quininer/.cargo/bin /home/quininer/.local/bin /usr/lib/emscripten /usr/lib/emscripten-fastcomp
 
 # config
-set -gx SSH_ASKPASS (which ksshaskpass)
+set -gx SSH_ASKPASS (which ttyaskpass)
 set -gx EDITOR (which vi)
 sh ~/.login.sh
 
@@ -18,6 +18,7 @@ fish_vi_key_bindings
 fish_vi_cursor
 
 set -x CHROOT $HOME/.cache/chroot
+set -x STARDICT_DATA_DIR $HOME/apps/dicts
 
 # alias ls
 function ls

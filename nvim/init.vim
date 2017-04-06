@@ -193,4 +193,5 @@ vnoremap <Leader>a :<C-U>call SearchWord_v(visualmode(), 1)<cr>
 " justfile
 augroup filetypedetect
   au BufNewFile,BufRead justfile setf make
+  au BufNewFile,BufRead Justfile setf make
 augroup END
