@@ -19,6 +19,8 @@ fish_vi_cursor
 
 set -x CHROOT $HOME/.cache/chroot
 set -x STARDICT_DATA_DIR $HOME/apps/dicts
+set -x LD_LIBRARY_PATH (rustc --print sysroot)/lib
+set -x RUST_SRC_PATH $LD_LIBRARY_PATH/rustlib/src/rust/src
 
 # alias ls
 function ls

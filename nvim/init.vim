@@ -35,6 +35,7 @@ set smarttab
 set formatoptions+=m
 set formatoptions+=B
 set viminfo^=%
+set guicursor=
 
 " relative line number
 set relativenumber number

@@ -27,21 +27,26 @@ let g:airline_exclude_preview = 1
 " nnoremap <leader>py	:ConqueTermSplit ipython<CR>
 
 " file search
-Plug 'ctrlpvim/ctrlp.vim'
-let g:ctrlp_map = '<leader>p'
-let g:ctrlp_cmd = 'CtrlP'
-map <leader>f	:CtrlP<CR>
-set wildignore+=*/target/*,*.so,*.swp,*.zip     " MacOSX/Linux
-set wildignore+=*\\target\\*,*.swp,*.zip,*.exe  " Windows
-let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|cargo)$'
+" Plug 'ctrlpvim/ctrlp.vim'
+" let g:ctrlp_map = '<leader>p'
+" let g:ctrlp_cmd = 'CtrlP'
+" map <leader>f	:CtrlP<CR>
+" set wildignore+=*/target/*,*.so,*.swp,*.zip     " MacOSX/Linux
+" set wildignore+=*\\target\\*,*.swp,*.zip,*.exe  " Windows
+" let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|cargo)$'
 
 " string search, ctrlp based
-Plug 'tacahiroy/ctrlp-funky'
-nnoremap <leader>ff		:CtrlPFunky<CR>
-nnoremap <Leader>fff	:execute 'CtrlPFunky ' . expand('<cword>')<Cr>
-let g:ctrlp_funky_syntax_highlight = 1
-let g:ctrlp_extensions = ['funky']
-let g:ctrlp_funky_multi_buffers = 1
+" Plug 'tacahiroy/ctrlp-funky'
+" nnoremap <leader>ff		:CtrlPFunky<CR>
+" nnoremap <Leader>fff	:execute 'CtrlPFunky ' . expand('<cword>')<Cr>
+" let g:ctrlp_funky_syntax_highlight = 1
+" let g:ctrlp_extensions = ['funky']
+" let g:ctrlp_funky_multi_buffers = 1
+
+" (Optional) Multi-entry selection UI.
+Plug 'Shougo/denite.nvim'
+nnoremap <silent> <leader>ff :<C-u>Denite file_rec<CR>
+nnoremap <silent> <leader>fr :<C-u>Denite file_mru<CR>
 
 " skim
 " Plug 'lotabout/skim'
@@ -117,11 +122,8 @@ Plug 'dag/vim-fish'
 " toml
 Plug 'cespare/vim-toml'
 
-" ProVerif
-Plug 'smelc/proverif.vim'
-au BufRead,BufNewFile *.pv setfiletype proverif
-au BufRead,BufNewFile *.pvf setfiletype proverif
-autocmd FileType proverif source ~/.config/nvim/plugged/proverif.vim/proverif.vim
+" Verify Script
+Plug 'mgrabovsky/vim-xverif'
 
 
 " == Language (semantic) ==
@@ -131,43 +133,40 @@ autocmd FileType proverif source ~/.config/nvim/plugged/proverif.vim/proverif.vi
 
 " Language Client
 Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
-" (Optional) Multi-entry selection UI.
-Plug 'Shougo/denite.nvim'
 " (Optional) Showing function signature and inline doc.
 Plug 'Shougo/echodoc.vim'
 " (Optional) Completion integration with deoplete.
 Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-let g:deoplete#enable_at_startup = 1
-let g:deoplete#enable_smart_case = 1
-let g:deoplete#disable_auto_complete = 1
+" let g:deoplete#enable_at_startup = 1
+" let g:deoplete#enable_smart_case = 1
+" let g:deoplete#disable_auto_complete = 1
 
 " Required for operations modifying multiple buffers like rename.
 set hidden
 let g:LanguageClient_serverCommands = {
-    \ 'rust': ['cargo', 'run', '--release', '--manifest-path=/home/quininer/apps/rls/Cargo.toml'],
+    \ 'rust': ['rls'],
     \ }
 au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
-au FileType rust nnoremap <silent><leader>gd	:call LanguageClient_textDocument_definition()<CR>
+au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
 au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
-au FileType rust inoremap <silent><expr><C-j>	<TAB>
-	\ pumvisible() ? "\<C-n>" :
-	\ <SID>check_back_space() ? "\<TAB>" :
-	\ deoplete#manual_complete()
+"au FileType rust inoremap <silent><expr><C-j>	<TAB>
+""	\ pumvisible() ? "\<C-n>" :
+""	\ <SID>check_back_space() ? "\<TAB>" :
+""	\ deoplete#mappings#manual_complete()
 
 function! s:check_back_space() abort "{{{
 	let col = col('.') - 1
 	return !col || getline('.')[col - 1]  =~ '\s'
 endfunction"}}}
-
+" au FileType rust LanguageClientStart
 
 " Rust
-" Plug 'racer-rust/vim-racer'
-" let g:racer_cmd = 'racer'
-" let g:racer_experimental_completer = 1
-" let $RUST_SRC_PATH='/home/quininer/apps/rust/src'
+Plug 'racer-rust/vim-racer'
+let g:racer_cmd = 'racer'
+let g:racer_experimental_completer = 1
 " au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
 " au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
-" au FileType rust inoremap	<C-j>			<C-x><C-o>
+au FileType rust inoremap	<C-j>			<C-x><C-o>
 
 " Python
 Plug 'mathieui/pyflakes3-vim'
