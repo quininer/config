@@ -146,8 +146,8 @@ set hidden
 let g:LanguageClient_serverCommands = {
     \ 'rust': ['rls'],
     \ }
-au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
-au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
+" au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
+" au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
 au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
 "au FileType rust inoremap <silent><expr><C-j>	<TAB>
 ""	\ pumvisible() ? "\<C-n>" :
@@ -164,8 +164,8 @@ endfunction"}}}
 Plug 'racer-rust/vim-racer'
 let g:racer_cmd = 'racer'
 let g:racer_experimental_completer = 1
-" au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
-" au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
+au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
+au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
 au FileType rust inoremap	<C-j>			<C-x><C-o>
 
 " Python
