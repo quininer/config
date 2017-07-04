@@ -61,10 +61,11 @@ nnoremap <leader>h :MundoToggle<CR>
 Plug 'airblade/vim-gitgutter'
 let g:gitgutter_map_keys = 0
 
-" trailing whitespace hint & remove
-Plug 'bronson/vim-trailing-whitespace'
-map <leader><space>	:FixWhitespace<cr>
-let g:extra_whitespace_ignored_filetypes = ['unite', 'mkd', 'mundo', 'diff']
+" trailing whitespace
+Plug 'ntpeters/vim-better-whitespace'
+map <leader><space>		:StripWhitespace<CR>
+let g:better_whitespace_filetypes_blacklist=['mundo', 'mkd']
+
 
 " auto brackets/quotes
 Plug 'Raimondi/delimitMate'
@@ -201,6 +202,7 @@ autocmd FileType python setlocal completeopt-=preview
 Plug 'vim-scripts/fcitx.vim'
 Plug 'vim-scripts/DrawIt'
 Plug 'fidian/hexmode'
+Plug 'johngrib/vim-game-code-break'
 " Plug 'ticki/rust-cute-vim'
 
 call plug#end()
