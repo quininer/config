@@ -108,7 +108,7 @@ let g:rbpt_loadcmd_toggle = 0
 
 " theme
 Plug 'altercation/vim-colors-solarized'
-" let g:solarized_termcolors=256
+let g:solarized_termcolors=256
 let g:solarized_termtrans=1
 
 
