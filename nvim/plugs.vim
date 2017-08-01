@@ -16,44 +16,20 @@ let NERDTreeHighlightCursorline=1
 let g:NERDTreeMapOpenSplit = 's'
 let g:NERDTreeMapOpenVSplit = 'v'
 
+Plug 'Xuyuanp/nerdtree-git-plugin'
+
+
 " buffer manager
 Plug 'vim-ctrlspace/vim-ctrlspace'
 let g:CtrlSpaceDefaultMappingKey = "<C-o>"
 let g:airline_exclude_preview = 1
 
-" call shell
-" Plug 'oplatek/Conque-Shell'
-" nnoremap <leader>sh	:ConqueTermSplit bash<CR>
-" nnoremap <leader>py	:ConqueTermSplit ipython<CR>
-
-" file search
-" Plug 'ctrlpvim/ctrlp.vim'
-" let g:ctrlp_map = '<leader>p'
-" let g:ctrlp_cmd = 'CtrlP'
-" map <leader>f	:CtrlP<CR>
-" set wildignore+=*/target/*,*.so,*.swp,*.zip     " MacOSX/Linux
-" set wildignore+=*\\target\\*,*.swp,*.zip,*.exe  " Windows
-" let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|cargo)$'
-
-" string search, ctrlp based
-" Plug 'tacahiroy/ctrlp-funky'
-" nnoremap <leader>ff		:CtrlPFunky<CR>
-" nnoremap <Leader>fff	:execute 'CtrlPFunky ' . expand('<cword>')<Cr>
-" let g:ctrlp_funky_syntax_highlight = 1
-" let g:ctrlp_extensions = ['funky']
-" let g:ctrlp_funky_multi_buffers = 1
-
-" (Optional) Multi-entry selection UI.
-Plug 'Shougo/denite.nvim'
-nnoremap <silent> <leader>ff :<C-u>Denite file_rec<CR>
-nnoremap <silent> <leader>fr :<C-u>Denite file_mru<CR>
-
-" skim
-" Plug 'lotabout/skim'
-
 Plug 'simnalamburt/vim-mundo'
 let g:mundo_prefer_python3 = 1
 nnoremap <leader>h :MundoToggle<CR>
+
+Plug 'wsdjeg/FlyGrep.vim'
+nnoremap <leader>f :FlyGrep<cr>
 
 " == Operation (passive) ==
 
