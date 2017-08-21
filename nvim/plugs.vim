@@ -28,8 +28,10 @@ Plug 'simnalamburt/vim-mundo'
 let g:mundo_prefer_python3 = 1
 nnoremap <leader>h :MundoToggle<CR>
 
-Plug 'wsdjeg/FlyGrep.vim'
-nnoremap <leader>f :FlyGrep<cr>
+" Plug 'wsdjeg/FlyGrep.vim'
+" nnoremap <leader>f :FlyGrep<cr>
+
+Plug 'jremmen/vim-ripgrep'
 
 " == Operation (passive) ==
 
