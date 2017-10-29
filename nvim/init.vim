@@ -73,6 +73,9 @@ set whichwrap+=<,>,h,l
 
 " == Plugins ==
 
+" load vimfiles
+set rtp^=/usr/share/vim/vimfiles/
+
 if filereadable(expand('~/.config/nvim/plugs.vim'))
 	source ~/.config/nvim/plugs.vim
 endif

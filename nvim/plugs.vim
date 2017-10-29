@@ -31,7 +31,7 @@ nnoremap <leader>h :MundoToggle<CR>
 " Plug 'wsdjeg/FlyGrep.vim'
 " nnoremap <leader>f :FlyGrep<cr>
 
-Plug 'jremmen/vim-ripgrep'
+" Plug 'jremmen/vim-ripgrep'
 
 " == Operation (passive) ==
 
@@ -86,8 +86,21 @@ let g:rbpt_loadcmd_toggle = 0
 
 " theme
 Plug 'altercation/vim-colors-solarized'
-let g:solarized_termcolors=256
-let g:solarized_termtrans=1
+" let g:solarized_termcolors=256
+" let g:solarized_termtrans=1
+
+Plug 'reedes/vim-colors-pencil'
+let g:pencil_higher_contrast_ui = 0   " 0=low (def), 1=high
+let g:pencil_neutral_headings = 1   " 0=blue (def), 1=normal
+let g:pencil_neutral_code_bg = 1   " 0=gray (def), 1=normal
+
+
+Plug 'tomasr/molokai'
+let g:rehash256 = 1
+
+Plug 'morhetz/gruvbox'
+
+Plug 'crusoexia/vim-monokai'
 
 
 " == Language highlight ==
@@ -116,36 +129,38 @@ Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
 Plug 'Shougo/echodoc.vim'
 " (Optional) Completion integration with deoplete.
 Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-" let g:deoplete#enable_at_startup = 1
-" let g:deoplete#enable_smart_case = 1
-" let g:deoplete#disable_auto_complete = 1
+let g:deoplete#enable_at_startup = 1
+let g:deoplete#enable_smart_case = 1
+let g:deoplete#disable_auto_complete = 1
 
 " Required for operations modifying multiple buffers like rename.
 set hidden
 let g:LanguageClient_serverCommands = {
-    \ 'rust': ['rls'],
+    \ 'rust': ['rustup', 'run', 'nightly', 'rls' ],
     \ }
-" au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
-" au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
+au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
+au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
 au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
-"au FileType rust inoremap <silent><expr><C-j>	<TAB>
-""	\ pumvisible() ? "\<C-n>" :
-""	\ <SID>check_back_space() ? "\<TAB>" :
-""	\ deoplete#mappings#manual_complete()
+au FileType rust inoremap <silent><expr><C-j>	<TAB>
+	\ pumvisible() ? "\<C-n>" :
+	\ <SID>check_back_space() ? "\<TAB>" :
+	\ deoplete#mappings#manual_complete()
 
 function! s:check_back_space() abort "{{{
 	let col = col('.') - 1
 	return !col || getline('.')[col - 1]  =~ '\s'
 endfunction"}}}
-" au FileType rust LanguageClientStart
+
+let g:LanguageClient_autoStart = 1
+
 
 " Rust
-Plug 'racer-rust/vim-racer'
-let g:racer_cmd = 'racer'
-let g:racer_experimental_completer = 1
-au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
-au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
-au FileType rust inoremap	<C-j>			<C-x><C-o>
+" Plug 'racer-rust/vim-racer'
+" let g:racer_cmd = 'racer'
+" let g:racer_experimental_completer = 1
+" au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
+" au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
+" au FileType rust inoremap	<C-j>			<C-x><C-o>
 
 " Python
 Plug 'mathieui/pyflakes3-vim'
