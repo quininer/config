@@ -124,14 +124,11 @@ Plug 'mgrabovsky/vim-xverif'
 " C-j	Completion
 
 " Language Client
-Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
-" (Optional) Showing function signature and inline doc.
-Plug 'Shougo/echodoc.vim'
+Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins', 'branch': 'next' }
+" (Completion plugin option 1)
+Plug 'roxma/nvim-completion-manager'
+au FileType rust inoremap	<C-j>			<C-x><C-o>
 " (Optional) Completion integration with deoplete.
-Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-let g:deoplete#enable_at_startup = 1
-let g:deoplete#enable_smart_case = 1
-let g:deoplete#disable_auto_complete = 1
 
 " Required for operations modifying multiple buffers like rename.
 set hidden
@@ -141,16 +138,6 @@ let g:LanguageClient_serverCommands = {
 au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
 au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
 au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
-au FileType rust inoremap <silent><expr><C-j>	<TAB>
-	\ pumvisible() ? "\<C-n>" :
-	\ <SID>check_back_space() ? "\<TAB>" :
-	\ deoplete#mappings#manual_complete()
-
-function! s:check_back_space() abort "{{{
-	let col = col('.') - 1
-	return !col || getline('.')[col - 1]  =~ '\s'
-endfunction"}}}
-
 let g:LanguageClient_autoStart = 1
 
 
