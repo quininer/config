@@ -179,7 +179,7 @@ autocmd FileType python setlocal completeopt-=preview
 
 " == Utils ==
 
-Plug 'vim-scripts/fcitx.vim'
+" Plug 'vim-scripts/fcitx.vim'
 Plug 'vim-scripts/DrawIt'
 Plug 'fidian/hexmode'
 Plug 'johngrib/vim-game-code-break'
