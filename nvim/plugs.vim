@@ -28,11 +28,6 @@ Plug 'simnalamburt/vim-mundo'
 let g:mundo_prefer_python3 = 1
 nnoremap <leader>h :MundoToggle<CR>
 
-" Plug 'wsdjeg/FlyGrep.vim'
-" nnoremap <leader>f :FlyGrep<cr>
-
-" Plug 'jremmen/vim-ripgrep'
-
 " == Operation (passive) ==
 
 " git diff hint
@@ -84,9 +79,11 @@ let g:rbpt_loadcmd_toggle = 0
 " au Syntax * RainbowParenthesesLoadSquare
 " au Syntax * RainbowParenthesesLoadBraces
 
+Plug 'lotabout/skim.vim'
+
 " theme
 Plug 'altercation/vim-colors-solarized'
-" let g:solarized_termcolors=256
+let g:solarized_termcolors=256
 " let g:solarized_termtrans=1
 
 Plug 'reedes/vim-colors-pencil'
@@ -117,6 +114,12 @@ Plug 'cespare/vim-toml'
 " Verify Script
 Plug 'mgrabovsky/vim-xverif'
 
+" wasm
+Plug 'rhysd/vim-wasm'
+
+" fluent
+Plug 'projectfluent/fluent.vim'
+
 
 " == Language (semantic) ==
 " ,jd	Jump Location (option)
@@ -126,20 +129,27 @@ Plug 'mgrabovsky/vim-xverif'
 " Language Client
 Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins', 'branch': 'next' }
 " (Completion plugin option 1)
-Plug 'roxma/nvim-completion-manager'
+Plug 'ncm2/ncm2'
+" ncm2 requires nvim-yarp
+Plug 'roxma/nvim-yarp'
+Plug 'ncm2/ncm2-path'
+" enable ncm2 for all buffers
+autocmd BufEnter * call ncm2#enable_for_buffer()
+" :help Ncm2PopupOpen for more information
+set completefunc=LanguageClient#complete
+set completeopt=noinsert,menuone,noselect
 au FileType rust inoremap	<C-j>			<C-x><C-o>
-" (Optional) Completion integration with deoplete.
 
 " Required for operations modifying multiple buffers like rename.
 set hidden
 let g:LanguageClient_serverCommands = {
     \ 'rust': ['rustup', 'run', 'nightly', 'rls' ],
     \ }
+au FileType rust nnoremap <F5>					:call LanguageClient_contextMenu()<CR>
 au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
 au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
 au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
-let g:LanguageClient_autoStart = 1
-
+let g:LanguageClient_autoStart = 0
 
 " Rust
 " Plug 'racer-rust/vim-racer'
@@ -184,5 +194,8 @@ Plug 'vim-scripts/DrawIt'
 Plug 'fidian/hexmode'
 Plug 'johngrib/vim-game-code-break'
 " Plug 'ticki/rust-cute-vim'
+" Plug 'wsdjeg/FlyGrep.vim'
+Plug 'lambdalisue/suda.vim'
+
 
 call plug#end()

@@ -92,7 +92,7 @@ nnoremap gj j
 " long undo
 nnoremap U <C-r>
 " sudo write
-cmap www w !sudo tee >/dev/null %
+cmap www w suda://%
 " quick quit
 nnoremap <leader>q	:q<CR>
 " quick esc
