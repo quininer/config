@@ -81,6 +81,24 @@ let g:rbpt_loadcmd_toggle = 0
 
 Plug 'lotabout/skim.vim'
 
+" Similarly, we can apply it to fzf#vim#grep. To use ripgrep instead of ag:
+command! -bang -nargs=* Rg
+  \ call fzf#vim#grep(
+  \   'rg --column --line-number --no-heading --color=always '.shellescape(<q-args>), 1,
+  \   <bang>0 ? fzf#vim#with_preview('up:60%')
+  \           : fzf#vim#with_preview('right:50%:hidden', '?'),
+  \   <bang>0)
+
+function! s:fzf_statusline()
+  " Override statusline as you like
+  highlight fzf1 ctermfg=161 ctermbg=251
+  highlight fzf2 ctermfg=23 ctermbg=251
+  highlight fzf3 ctermfg=237 ctermbg=251
+  setlocal statusline=%#fzf1#\ >\ %#fzf2#fz%#fzf3#f
+endfunction
+
+autocmd! User FzfStatusLine call <SID>fzf_statusline()
+
 " theme
 Plug 'altercation/vim-colors-solarized'
 let g:solarized_termcolors=256
@@ -120,6 +138,8 @@ Plug 'rhysd/vim-wasm'
 " fluent
 Plug 'projectfluent/fluent.vim'
 
+" pest
+Plug 'pest-parser/pest.vim'
 
 " == Language (semantic) ==
 " ,jd	Jump Location (option)
@@ -150,6 +170,8 @@ au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()
 au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
 au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
 let g:LanguageClient_autoStart = 0
+let g:LanguageClient_loggingFile =  expand('/tmp/LanguageClient.log')
+let g:LanguageClient_serverStderr = expand('/tmp/LanguageServer.log')
 
 " Rust
 " Plug 'racer-rust/vim-racer'
