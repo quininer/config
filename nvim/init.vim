@@ -96,7 +96,6 @@ cmap www w suda://%
 " quick quit
 nnoremap <leader>q	:q<CR>
 " quick esc
-inoremap kj <ESC>
 inoremap <A-space> <ESC>
 " quick command
 nnoremap ;	:
