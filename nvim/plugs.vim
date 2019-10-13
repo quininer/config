@@ -153,8 +153,11 @@ Plug 'ncm2/ncm2'
 " ncm2 requires nvim-yarp
 Plug 'roxma/nvim-yarp'
 Plug 'ncm2/ncm2-path'
+Plug 'ncm2/float-preview.nvim'
 " enable ncm2 for all buffers
 autocmd BufEnter * call ncm2#enable_for_buffer()
+let g:float_preview#docked = 0
+let g:float_preview#auto_close = 0
 " :help Ncm2PopupOpen for more information
 set completefunc=LanguageClient#complete
 set completeopt=noinsert,menuone,noselect
@@ -163,7 +166,7 @@ au FileType rust inoremap	<C-j>			<C-x><C-o>
 " Required for operations modifying multiple buffers like rename.
 set hidden
 let g:LanguageClient_serverCommands = {
-    \ 'rust': ['rustup', 'run', 'nightly', 'rls' ],
+    \ 'rust': ['ra_lsp_server' ],
     \ }
 au FileType rust nnoremap <F5>					:call LanguageClient_contextMenu()<CR>
 au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
