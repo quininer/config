@@ -100,28 +100,22 @@ endfunction
 autocmd! User FzfStatusLine call <SID>fzf_statusline()
 
 " theme
-Plug 'altercation/vim-colors-solarized'
-let g:solarized_termcolors=256
-" let g:solarized_termtrans=1
+Plug 'arzg/vim-colors-xcode'
 
-Plug 'reedes/vim-colors-pencil'
-let g:pencil_higher_contrast_ui = 0   " 0=low (def), 1=high
-let g:pencil_neutral_headings = 1   " 0=blue (def), 1=normal
-let g:pencil_neutral_code_bg = 1   " 0=gray (def), 1=normal
+Plug 'rhysd/vim-color-spring-night'
 
+Plug 'wadackel/vim-dogrun'
 
-Plug 'tomasr/molokai'
-let g:rehash256 = 1
-
-Plug 'morhetz/gruvbox'
-
-Plug 'crusoexia/vim-monokai'
-
+Plug 'joshdick/onedark.vim'
+let g:lightline = {
+  \ 'colorscheme': 'onedark',
+  \ }
 
 " == Language highlight ==
 
 " Rust
 Plug 'rust-lang/rust.vim'
+" Plug 'arzg/vim-rust-syntax-ext'
 
 " fish
 Plug 'dag/vim-fish'
@@ -140,6 +134,16 @@ Plug 'projectfluent/fluent.vim'
 
 " pest
 Plug 'pest-parser/pest.vim'
+
+" markdown
+Plug 'gabrielelana/vim-markdown'
+let g:markdown_enable_mappings = 0
+let g:markdown_enable_insert_mode_mappings = 0
+let g:markdown_enable_spell_checking = 0
+let g:markdown_enable_input_abbreviations = 0
+" let g:markdown_enable_conceal = 1
+
+" Plug 'sheerun/vim-polyglot'
 
 " == Language (semantic) ==
 " ,jd	Jump Location (option)
@@ -166,7 +170,7 @@ au FileType rust inoremap	<C-j>			<C-x><C-o>
 " Required for operations modifying multiple buffers like rename.
 set hidden
 let g:LanguageClient_serverCommands = {
-    \ 'rust': ['ra_lsp_server' ],
+    \ 'rust': ['rust-analyzer' ],
     \ }
 au FileType rust nnoremap <F5>					:call LanguageClient_contextMenu()<CR>
 au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>

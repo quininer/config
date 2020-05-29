@@ -25,7 +25,6 @@ bind-key <esc>k prev-feed
 bind-key <esc>j next-feed
 bind-key h      quit
 bind-key l      open
-bind-key p      pb-play  podbeuter
 bind-key o      open-in-browser
 
 
