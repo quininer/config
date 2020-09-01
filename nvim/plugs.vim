@@ -136,11 +136,11 @@ Plug 'projectfluent/fluent.vim'
 Plug 'pest-parser/pest.vim'
 
 " markdown
-Plug 'gabrielelana/vim-markdown'
-let g:markdown_enable_mappings = 0
-let g:markdown_enable_insert_mode_mappings = 0
-let g:markdown_enable_spell_checking = 0
-let g:markdown_enable_input_abbreviations = 0
+" Plug 'gabrielelana/vim-markdown'
+" let g:markdown_enable_mappings = 0
+" let g:markdown_enable_insert_mode_mappings = 0
+" let g:markdown_enable_spell_checking = 0
+" let g:markdown_enable_input_abbreviations = 0
 " let g:markdown_enable_conceal = 1
 
 " Plug 'sheerun/vim-polyglot'
