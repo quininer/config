@@ -172,6 +172,7 @@ set hidden
 let g:LanguageClient_serverCommands = {
     \ 'rust': ['rust-analyzer' ],
     \ }
+let g:LanguageClient_settingsPath = "~/.config/nvim/settings.json"
 au FileType rust nnoremap <F5>					:call LanguageClient_contextMenu()<CR>
 au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
 au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
@@ -179,14 +180,6 @@ au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_r
 let g:LanguageClient_autoStart = 0
 let g:LanguageClient_loggingFile =  expand('/tmp/LanguageClient.log')
 let g:LanguageClient_serverStderr = expand('/tmp/LanguageServer.log')
-
-" Rust
-" Plug 'racer-rust/vim-racer'
-" let g:racer_cmd = 'racer'
-" let g:racer_experimental_completer = 1
-" au FileType rust nmap		<leader>gd		:split<CR>:call racer#GoToDefinition()<CR>
-" au FileType rust nmap		K				:call racer#ShowDocumentation()<CR>
-" au FileType rust inoremap	<C-j>			<C-x><C-o>
 
 " Python
 Plug 'mathieui/pyflakes3-vim'
