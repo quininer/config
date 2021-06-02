@@ -2,7 +2,7 @@
 
 cat << EOF
 {
-	"set_env": {
+	"set-env": {
 		"EDITOR": "nvim"
 	},
 	"push-path": [
