@@ -1,0 +1,18 @@
+#!/usr/bin/sh
+
+cat << EOF
+{
+	"set_env": {
+		"EDITOR": "nvim"
+	},
+	"push-path": [
+		"$HOME/.local/bin",
+		"$HOME/.cargo/bin"
+	],
+	"alias": {
+		"ls": "exa",
+		"la": "exa -hal",
+		"wget": "curl -L -O -C -"
+	}
+}
+EOF

@@ -1,15 +1,16 @@
 fish_vi_key_bindings
 fish_vi_cursor
 
+set -x fish_cursor_insert	block
+
 set -x PATH					$PATH $HOME/.local/bin $HOME/.cargo/bin
 set -x EDITOR				nvim
 set -x PAGER				less
-set -x LD_LIBRARY_PATH		(rustc --print sysroot)/lib
 set -x SSH_ASKPASS			(which ksshaskpass)
-set -x RUST_SRC_PATH		$LD_LIBRARY_PATH/rustlib/src/rust/src
+# set -x LD_LIBRARY_PATH		(rustc --print sysroot)/lib
 # set -x RUSTUP_DIST_SERVER	"https://mirrors.ustc.edu.cn/rust-static"
 
-alias wget	"curl -O -C -"
+alias wget	"curl -L -O -C -"
 alias ls	exa
 alias grep	rg
 alias aa16	"aria2c -k1M -j16 -x16 -s16 --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "(chromium --version | string replace "Chromium " "Chrome/" | string trim -r --chars="Arch Linux")" Safari/537.36'"
