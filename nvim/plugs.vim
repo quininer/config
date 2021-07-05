@@ -52,33 +52,6 @@ Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 let g:airline_theme="luna"
 
-" brackets highlight
-Plug 'kien/rainbow_parentheses.vim'
-let g:rbpt_colorpairs = [
-	\ ['brown',       'RoyalBlue3'],
-	\ ['Darkblue',    'SeaGreen3'],
-	\ ['darkgray',    'DarkOrchid3'],
-	\ ['darkgreen',   'firebrick3'],
-	\ ['darkcyan',    'RoyalBlue3'],
-	\ ['darkred',     'SeaGreen3'],
-	\ ['darkmagenta', 'DarkOrchid3'],
-	\ ['brown',       'firebrick3'],
-	\ ['gray',        'RoyalBlue3'],
-	\ ['black',       'SeaGreen3'],
-	\ ['darkmagenta', 'DarkOrchid3'],
-	\ ['Darkblue',    'firebrick3'],
-	\ ['darkgreen',   'RoyalBlue3'],
-	\ ['darkcyan',    'SeaGreen3'],
-	\ ['darkred',     'DarkOrchid3'],
-	\ ['red',         'firebrick3'],
-	\ ]
-let g:rbpt_max = 40
-let g:rbpt_loadcmd_toggle = 0
-" au VimEnter * RainbowParenthesesToggle
-" au Syntax * RainbowParenthesesLoadRound
-" au Syntax * RainbowParenthesesLoadSquare
-" au Syntax * RainbowParenthesesLoadBraces
-
 Plug 'lotabout/skim.vim'
 
 " Similarly, we can apply it to fzf#vim#grep. To use ripgrep instead of ag:
@@ -113,15 +86,10 @@ let g:lightline = {
 
 " == Language highlight ==
 
-" Rust
-Plug 'rust-lang/rust.vim'
-" Plug 'arzg/vim-rust-syntax-ext'
-
-" fish
-Plug 'dag/vim-fish'
-
-" toml
-Plug 'cespare/vim-toml'
+" Tree Sitter
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+Plug 'p00f/nvim-ts-rainbow'
+Plug 'romgrk/nvim-treesitter-context'
 
 " Verify Script
 Plug 'mgrabovsky/vim-xverif'
@@ -135,79 +103,16 @@ Plug 'projectfluent/fluent.vim'
 " pest
 Plug 'pest-parser/pest.vim'
 
-" markdown
-" Plug 'gabrielelana/vim-markdown'
-" let g:markdown_enable_mappings = 0
-" let g:markdown_enable_insert_mode_mappings = 0
-" let g:markdown_enable_spell_checking = 0
-" let g:markdown_enable_input_abbreviations = 0
-" let g:markdown_enable_conceal = 1
-
-" Plug 'sheerun/vim-polyglot'
-
 " == Language (semantic) ==
 " ,jd	Jump Location (option)
 " ,gd	Goto Definition
 " C-j	Completion
 
 " Language Client
-Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins', 'branch': 'next' }
-" (Completion plugin option 1)
-Plug 'ncm2/ncm2'
-" ncm2 requires nvim-yarp
-Plug 'roxma/nvim-yarp'
-Plug 'ncm2/ncm2-path'
-Plug 'ncm2/float-preview.nvim'
-" enable ncm2 for all buffers
-autocmd BufEnter * call ncm2#enable_for_buffer()
-let g:float_preview#docked = 0
-let g:float_preview#auto_close = 0
-" :help Ncm2PopupOpen for more information
-set completefunc=LanguageClient#complete
-set completeopt=noinsert,menuone,noselect
-au FileType rust inoremap	<C-j>			<C-x><C-o>
+Plug 'neovim/nvim-lspconfig'
 
-" Required for operations modifying multiple buffers like rename.
-set hidden
-let g:LanguageClient_serverCommands = {
-    \ 'rust': ['rust-analyzer' ],
-    \ }
-let g:LanguageClient_settingsPath = "~/.config/nvim/settings.json"
-au FileType rust nnoremap <F5>					:call LanguageClient_contextMenu()<CR>
-au FileType rust nnoremap <silent>K				:call LanguageClient_textDocument_hover()<CR>
-au FileType rust nnoremap <silent><leader>gd	:split<CR>:call LanguageClient_textDocument_definition()<CR>
-au FileType rust nnoremap <silent><leader>re	:call LanguageClient_textDocument_rename()<CR>
-let g:LanguageClient_autoStart = 0
-let g:LanguageClient_loggingFile =  expand('/tmp/LanguageClient.log')
-let g:LanguageClient_serverStderr = expand('/tmp/LanguageServer.log')
-
-" Python
-Plug 'mathieui/pyflakes3-vim'
-let g:pyflakes_use_quickfix = 0
-
-" Python
-Plug 'davidhalter/jedi-vim'
-let g:jedi#use_splits_not_buffers = 'top'
-let g:jedi#popup_on_dot = 1
-let g:jedi#popup_select_first = 1
-let g:jedi#goto_assignments_command = '<leader>jd'
-let g:jedi#goto_definitions_command = '<leader>gd'
-let g:jedi#documentation_command = 'K'
-let g:jedi#usages_command = '<leader>u'
-let g:jedi#completions_command = '<C-j>'
-let g:jedi#rename_command = '<leader>r'
-let g:jedi#force_py_version = 3
-autocmd FileType python setlocal completeopt-=preview
-
-" Markdown
-" function! BuildComposer(info)
-" "  if a:info.status != 'unchanged' || a:info.force
-" "    !cargo build --release
-" "    UpdateRemotePlugins
-" "  endif
-" endfunction
-"
-" Plug 'euclio/vim-markdown-composer', { 'do': function('BuildComposer') }
+Plug 'hrsh7th/nvim-compe'
+set completeopt=menuone,noselect
 
 " == Utils ==
 
@@ -221,3 +126,115 @@ Plug 'lambdalisue/suda.vim'
 
 
 call plug#end()
+
+
+lua <<EOF
+require'nvim-treesitter.configs'.setup {
+  ensure_installed = { "rust", "json", "c", "cpp", "python", "javascript", "toml" },
+  highlight = {
+    enable = true,
+  },
+  rainbow = {
+    enable = true
+  }
+}
+
+require'treesitter-context.config'.setup{
+    enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+}
+
+vim.g.splitbelow = true
+
+-- LSP settings
+local nvim_lsp = require('lspconfig')
+local on_attach = function(_client, bufnr)
+  -- vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
+
+  local opts = { noremap=true, silent=true }
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'gD', '<Cmd>lua vim.lsp.buf.declaration()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'gd', '<Cmd>lua vim.lsp.buf.definition()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'K', '<Cmd>lua vim.lsp.buf.hover()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>wa', '<cmd>lua vim.lsp.buf.add_workspace_folder()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>wr', '<cmd>lua vim.lsp.buf.remove_workspace_folder()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>wl', '<cmd>lua print(vim.inspect(vim.lsp.buf.list_workspace_folders()))<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>D', '<cmd>lua vim.lsp.buf.type_definition()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>rn', '<cmd>lua vim.lsp.buf.rename()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'gr', '<cmd>lua vim.lsp.buf.references()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>e', '<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', '[d', '<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>', opts)
+  vim.api.nvim_buf_set_keymap(bufnr, 'n', ']d', '<cmd>lua vim.lsp.diagnostic.goto_next()<CR>', opts)
+  -- vim.api.nvim_buf_set_keymap(bufnr, 'n', '<leader>q', '<cmd>lua vim.lsp.diagnostic.set_loclist()<CR>', opts)
+end
+
+-- Enable the following language servers
+local servers = { 'rust_analyzer' }
+for _, lsp in ipairs(servers) do
+  nvim_lsp[lsp].setup {
+	on_attach = on_attach,
+	autostart = false
+  }
+end
+
+require'compe'.setup {
+  enabled = true;
+  autocomplete = true;
+  debug = false;
+  min_length = 1;
+  preselect = 'enable';
+  throttle_time = 80;
+  source_timeout = 200;
+  incomplete_delay = 400;
+  max_abbr_width = 100;
+  max_kind_width = 100;
+  max_menu_width = 100;
+  documentation = true;
+
+  source = {
+	buffer = true;
+    path = true;
+    nvim_lsp = true;
+  };
+}
+
+local t = function(str)
+  return vim.api.nvim_replace_termcodes(str, true, true, true)
+end
+
+local check_back_space = function()
+    local col = vim.fn.col('.') - 1
+    if col == 0 or vim.fn.getline('.'):sub(col, col):match('%s') then
+        return true
+    else
+        return false
+    end
+end
+
+-- Use (s-)tab to:
+--- move to prev/next item in completion menuone
+--- jump to prev/next snippet's placeholder
+_G.tab_complete = function()
+  if vim.fn.pumvisible() == 1 then
+    return t "<C-n>"
+  elseif check_back_space() then
+    return t "<Tab>"
+  else
+    return vim.fn['compe#complete']()
+  end
+end
+_G.s_tab_complete = function()
+  if vim.fn.pumvisible() == 1 then
+    return t "<C-p>"
+  else
+    return t "<S-Tab>"
+  end
+end
+
+vim.api.nvim_set_keymap("i", "<Tab>", "v:lua.tab_complete()", {expr = true})
+vim.api.nvim_set_keymap("s", "<Tab>", "v:lua.tab_complete()", {expr = true})
+vim.api.nvim_set_keymap("i", "<S-Tab>", "v:lua.s_tab_complete()", {expr = true})
+vim.api.nvim_set_keymap("s", "<S-Tab>", "v:lua.s_tab_complete()", {expr = true})
+
+EOF
