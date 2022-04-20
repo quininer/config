@@ -71,16 +71,6 @@ set backspace=eol,start,indent
 set whichwrap+=<,>,h,l
 
 
-" == Plugins ==
-
-" load vimfiles
-set rtp^=/usr/share/vim/vimfiles/
-
-if filereadable(expand('~/.config/nvim/plugs.vim'))
-	source ~/.config/nvim/plugs.vim
-endif
-
-
 " == key ==
 
 " jump
@@ -169,19 +159,23 @@ endif
 
 set background=dark
 " set t_Co=256
-" colorscheme onedark
-colorscheme xcodewwdc
 
-" == utils ==
+" == Plugins ==
+
+" load vimfiles
+set rtp^=/usr/share/vim/vimfiles/
+
+if filereadable(expand('~/.config/nvim/plugs.vim'))
+	source ~/.config/nvim/plugs.vim
+endif
+
+" == Utils ==
 
 " set tab
 autocmd FileType python set tabstop=4 shiftwidth=4 expandtab ai
 
 " use clipboard
 set clipboard+=unnamedplus
-
-" mutt
-au BufRead /tmp/mutt-* set tw=72
 
 " ydcv
 " translate the word under cursor

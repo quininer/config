@@ -31,8 +31,7 @@ nnoremap <leader>h :MundoToggle<CR>
 " == Operation (passive) ==
 
 " git diff hint
-Plug 'airblade/vim-gitgutter'
-let g:gitgutter_map_keys = 0
+Plug 'lewis6991/gitsigns.nvim'
 
 " trailing whitespace
 Plug 'ntpeters/vim-better-whitespace'
@@ -124,11 +123,20 @@ Plug 'johngrib/vim-game-code-break'
 " Plug 'wsdjeg/FlyGrep.vim'
 Plug 'lambdalisue/suda.vim'
 
-
 call plug#end()
 
 
 lua <<EOF
+require('gitsigns').setup {
+  signs = {
+    add          = {text = '+', },
+    change       = {text = '~', },
+    delete       = {text = '_', },
+    topdelete    = {text = '_', },
+    changedelete = {text = '~', },
+  },
+}
+
 require'nvim-treesitter.configs'.setup {
   ensure_installed = { "rust", "json", "c", "cpp", "python", "javascript", "toml" },
   highlight = {
@@ -238,3 +246,10 @@ vim.api.nvim_set_keymap("i", "<S-Tab>", "v:lua.s_tab_complete()", {expr = true})
 vim.api.nvim_set_keymap("s", "<S-Tab>", "v:lua.s_tab_complete()", {expr = true})
 
 EOF
+
+" == plugs config ==
+
+colorscheme xcodewwdc
+highlight GitSignsAdd		guifg=green
+highlight GitSignsChange	guifg=yellow
+highlight GitSignsDelete	guifg=red
