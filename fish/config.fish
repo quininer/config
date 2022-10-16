@@ -12,7 +12,9 @@ set -x SSH_ASKPASS			(which ksshaskpass)
 
 alias wget	"curl -L -O -C -"
 alias ls	exa
+alias la	"exa -hal"
 alias grep	rg
+alias hx	helix
 alias aa16	"aria2c -k1M -j16 -x16 -s16 --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "(chromium --version | string replace "Chromium " "Chrome/" | string trim -r --chars="Arch Linux")" Safari/537.36'"
 
 # color man
