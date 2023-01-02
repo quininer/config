@@ -314,6 +314,6 @@ shell: /usr/bin/bash
 #   - ~AppKeypad
 #   - AppKeypad
 key_bindings:
-  - { key: N,        mods: Control|Shift,    action: SpawnNewInstance }
-  - { key: F11,                              command: { program: "wmctrl", args: ["-r", ":ACTIVE:", "-b", "toggle,fullscreen" ] } }
-  - { key: A,                           mode: Vi, action: ToggleViMode            }
+  - { key: N,       mods: Control|Shift, action: SpawnNewInstance }
+  - { key: F11,     action: ToggleFullscreen }
+  - { key: A,       mode: Vi, action: ToggleViMode }
