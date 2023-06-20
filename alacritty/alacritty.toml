@@ -1,0 +1,118 @@
+live_config_reload = true
+shell = "/usr/bin/bash"
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[colors.bright]
+black = "0x212121"
+blue = "0x20bbfc"
+cyan = "0x4fb8cc"
+green = "0x5fd7af"
+magenta = "0x6855de"
+red = "0xfb007a"
+white = "0xf1f1f1"
+yellow = "0xf3e430"
+
+[colors.dim]
+black = "0x333333"
+blue = "0x6699cc"
+cyan = "0x66cccc"
+green = "0x99cc99"
+magenta = "0xcc99cc"
+red = "0xf2777a"
+white = "0xdddddd"
+yellow = "0xffcc66"
+
+[colors.normal]
+black = "0x212121"
+blue = "0x008ec4"
+cyan = "0x20a5ba"
+green = "0x10a778"
+magenta = "0x523c79"
+red = "0xc30771"
+white = "0xe0e0e0"
+yellow = "0xa89c14"
+
+[colors.primary]
+background = "0x212121"
+foreground = "0xf1f1f1"
+
+[cursor]
+style = "Block"
+unfocused_hollow = true
+
+[env]
+TERM = "alacritty"
+
+[font]
+size = 15.0
+
+[font.bold]
+family = "Hack"
+style = "Bold"
+
+[font.glyph_offset]
+x = 0
+y = 0
+
+[font.italic]
+family = "Hack"
+style = "Italic"
+
+[font.normal]
+family = "Hack"
+style = "Regular"
+
+[font.offset]
+x = 0
+y = 0
+
+[[keyboard.bindings]]
+action = "SpawnNewInstance"
+key = "N"
+mods = "Control|Shift"
+
+[[keyboard.bindings]]
+action = "ToggleFullscreen"
+key = "F11"
+
+[[keyboard.bindings]]
+action = "ToggleViMode"
+key = "A"
+mode = "Vi"
+
+[mouse]
+hide_when_typing = false
+
+[[mouse.bindings]]
+action = "PasteSelection"
+mouse = "Middle"
+
+[mouse.double_click]
+threshold = 300
+
+[mouse.hints]
+launcher = "firefox-private"
+modifiers = "Control|Shift"
+
+[mouse.triple_click]
+threshold = 300
+
+[scrolling]
+history = 100000
+
+[selection]
+save_to_clipboard = false
+semantic_escape_chars = ",│`|:\"' ()[]{}<>"
+
+[window]
+decorations = "full"
+
+[window.dimensions]
+columns = 80
+lines = 24
+
+[window.padding]
+x = 2
+y = 2
