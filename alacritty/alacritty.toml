@@ -89,15 +89,9 @@ hide_when_typing = false
 action = "PasteSelection"
 mouse = "Middle"
 
-[mouse.double_click]
-threshold = 300
-
-[mouse.hints]
-launcher = "firefox-private"
-modifiers = "Control|Shift"
-
-[mouse.triple_click]
-threshold = 300
+# [mouse.hints]
+# launcher = "firefox-private"
+# modifiers = "Control|Shift"
 
 [scrolling]
 history = 100000
