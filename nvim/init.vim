@@ -208,3 +208,8 @@ augroup filetypedetect
   au BufNewFile,BufRead justfile setf make
   au BufNewFile,BufRead Justfile setf make
 augroup END
+
+" wgsl
+augroup filetypedetect
+  au BufNewFile,BufRead *.wgsl setf wgsl_bevy
+augroup END
