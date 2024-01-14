@@ -138,7 +138,7 @@ require('gitsigns').setup {
 }
 
 require'nvim-treesitter.configs'.setup {
-  ensure_installed = { "rust", "json", "c", "cpp", "python", "javascript", "toml", "wgsl_bevy", "glsl" },
+  ensure_installed = { "rust", "json", "c", "cpp", "python", "javascript", "toml", "wgsl_bevy", "glsl", "ron" },
   highlight = {
     enable = true,
   },
