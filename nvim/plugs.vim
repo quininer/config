@@ -102,6 +102,9 @@ Plug 'projectfluent/fluent.vim'
 " pest
 Plug 'pest-parser/pest.vim'
 
+"egg
+Plug 'segeljakt/tree-sitter-egg'
+
 " == Language (semantic) ==
 " ,jd	Jump Location (option)
 " ,gd	Goto Definition
@@ -140,13 +143,25 @@ require('gitsigns').setup {
 }
 
 require'nvim-treesitter.configs'.setup {
-  ensure_installed = { "rust", "json", "c", "cpp", "python", "javascript", "toml", "wgsl_bevy", "glsl", "ron", "typescript" },
+  ensure_installed = { "rust", "json", "c", "cpp", "python", "javascript", "toml", "wgsl_bevy", "glsl", "ron", "typescript", "egg" },
   highlight = {
     enable = true,
   },
   rainbow = {
     enable = true
   }
+}
+
+require'nvim-treesitter.parsers'.get_parser_configs().egg = {
+  install_info = {
+    url = "~/.config/nvim/plugged/tree-sitter-egg", -- local path or git repo
+    files = {"src/parser.c"}, -- note that some parsers also require src/scanner.c or src/scanner.cc
+    -- optional entries:
+    branch = "master", -- default branch in case of git repo if different from master
+    generate_requires_npm = true, -- if stand-alone parser without npm dependencies
+    requires_generate_from_grammar = false, -- if folder contains pre-generated src/parser.c
+  },
+  filetype = "egg", -- if filetype does not match the parser name
 }
 
 require'treesitter-context'.setup{

@@ -213,3 +213,13 @@ augroup END
 augroup filetypedetect
   au BufNewFile,BufRead *.wgsl setf wgsl_bevy
 augroup END
+
+" egg
+augroup filetypedetect
+  au BufNewFile,BufRead *.egg setf egg
+augroup END
+
+" pawmi
+augroup filetypedetect
+  au BufNewFile,BufRead *.paw setf rust
+augroup END
