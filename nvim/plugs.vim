@@ -72,11 +72,11 @@ endfunction
 autocmd! User FzfStatusLine call <SID>fzf_statusline()
 
 " theme
-Plug 'arzg/vim-colors-xcode'
+"Plug 'arzg/vim-colors-xcode'
 
-Plug 'rhysd/vim-color-spring-night'
+"Plug 'rhysd/vim-color-spring-night'
 
-Plug 'wadackel/vim-dogrun'
+"Plug 'wadackel/vim-dogrun'
 
 Plug 'joshdick/onedark.vim'
 let g:lightline = {
@@ -166,6 +166,8 @@ require'nvim-treesitter.parsers'.get_parser_configs().egg = {
 
 require'treesitter-context'.setup{
     enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+	max_lines = 5,
+	min_window_height = 10,
 }
 
 vim.g.splitbelow = true
@@ -238,7 +240,8 @@ EOF
 
 " == plugs config ==
 
-colorscheme xcodewwdc
+"colorscheme xcodewwdc
+colorscheme onedark
 highlight GitSignsAdd		guifg=green
 highlight GitSignsChange	guifg=yellow
 highlight GitSignsDelete	guifg=red
