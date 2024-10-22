@@ -211,6 +211,12 @@ end
 local cmp = require'cmp'
 
 cmp.setup {
+    performance = {
+        fetching_timeout = 5,
+		max_view_entries = 15,
+		debounce = 5,
+		throttle = 5,
+    },
     mapping = cmp.mapping.preset.insert {
       ['<C-b>'] = cmp.mapping.scroll_docs(-4),
       ['<C-f>'] = cmp.mapping.scroll_docs(4),

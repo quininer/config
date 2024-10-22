@@ -1,0 +1,6 @@
+[language-server.scls]
+command = "simple-completion-language-server"
+
+[[language]]
+name = "git-commit"
+language-servers = [ "scls" ]
