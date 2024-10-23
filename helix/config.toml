@@ -11,8 +11,6 @@ insert = "bar"
 
 [keys.normal]
 ";" = "command_mode"
-"a" = "insert_at_line_end"
-"A" = "append_mode"
 "C-o" = "buffer_picker"
 
 # search
@@ -30,9 +28,17 @@ insert = "bar"
 "A-l" = "jump_view_right"
 
 [keys.normal.","]
-"," = "keep_primary_selection"
+"," = [ "collapse_selection", "keep_primary_selection" ] # clear select
 "n" = "file_picker_in_current_directory"
 "q" = "wclose"
+"f" = "@:hs<ret><A-k>maf<A-;>,," # jump to function header
+
+[keys.normal."d"]
+"d" = [ "extend_to_line_bounds", "delete_selection" ]
 
 [keys.insert]
 "A-space" = "normal_mode"
+
+[keys.select.","]
+"," = [ "collapse_selection", "keep_primary_selection", "normal_mode" ]
+"p" = [ "delete_selection_noyank", "paste_after" ]
