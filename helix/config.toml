@@ -39,6 +39,8 @@ insert = "bar"
 [keys.insert]
 "A-space" = "normal_mode"
 
+[keys.select]
+"p" = [ "delete_selection_noyank", "paste_before" ]
+
 [keys.select.","]
 "," = [ "collapse_selection", "keep_primary_selection", "normal_mode" ]
-"p" = [ "delete_selection_noyank", "paste_after" ]
