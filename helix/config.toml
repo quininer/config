@@ -31,7 +31,7 @@ insert = "bar"
 "," = [ "collapse_selection", "keep_primary_selection" ] # clear select
 "n" = "file_picker_in_current_directory"
 "q" = "wclose"
-"f" = "@:hs<ret><A-k>maf<A-;>,," # jump to function header
+"f" = "@maf<A-;>,," # jump to function header
 
 [keys.normal."d"]
 "d" = [ "extend_to_line_bounds", "delete_selection" ]
