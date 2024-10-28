@@ -13,6 +13,9 @@ insert = "bar"
 ";" = "command_mode"
 "C-o" = "buffer_picker"
 
+"A-n" = "goto_prev_paragraph"
+"A-m" = "goto_next_paragraph"
+
 # search
 "*" = [
 	"move_char_right",
