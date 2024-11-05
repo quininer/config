@@ -17,12 +17,7 @@ insert = "bar"
 "A-m" = "goto_next_paragraph"
 
 # search
-"*" = [
-	"move_char_right",
-	"move_prev_word_start",
-	"move_next_word_end",
-	"search_selection",
-]
+"*" = "@miw,s<ret>"
 
 # window
 "A-h" = "jump_view_left"
@@ -35,6 +30,7 @@ insert = "bar"
 "n" = "file_picker_in_current_directory"
 "q" = "wclose"
 "f" = "@maf<A-;>,," # jump to function header
+"s" = "search_selection"
 
 [keys.normal."d"]
 "d" = [ "extend_to_line_bounds", "delete_selection" ]
