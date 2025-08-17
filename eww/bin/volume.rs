@@ -76,6 +76,12 @@ fn get_volume(line: &mut String) -> anyhow::Result<Output> {
         .context("need volume stdout")?;
     line.clear();
     stdout.read_to_string(line)?;
+    child.kill()?;
+    let status = child.wait()?;
+
+    if !status.success() {
+        anyhow::bail!("get volume failed: {:?}", status);
+    }
 
     let line = line.strip_prefix("Volume: ").context("bad format")?;
     let (value, state) = line.split_once(' ').unwrap_or((line, ""));
