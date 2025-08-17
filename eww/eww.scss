@@ -197,6 +197,10 @@ window {
   widget .workspace .column.focused {
     color: $text;
   }
+
+  widget .workspace .column.urgent {
+    color: $crust;
+  }  
 }
 
 

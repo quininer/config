@@ -1,11 +1,3 @@
-#!/usr/bin/env cargo
-//! ```cargo
-//! [dependencies]
-//! anyhow = "1"
-//! serde = "1"
-//! serde_json = "1"
-//! ```
-
 use std::io::{ self, Write };
 use std::collections::BTreeMap;
 use serde::ser::SerializeSeq;
@@ -38,6 +30,7 @@ struct Window {
     id: u64,
     pos: usize,
     is_focused: bool,
+    is_urgent: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -78,8 +71,9 @@ fn main() -> anyhow::Result<()> {
                 {
                     workspace.windows.push(Window {
                         id: ws_id,
+                        is_focused: window.is_focused,
+                        is_urgent: window.is_urgent,
                         pos: window.layout.pos_in_scrolling_layout.unwrap_or_default().0,
-                        is_focused: window.is_focused
                     });
                 }
             }

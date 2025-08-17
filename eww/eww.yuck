@@ -1,8 +1,8 @@
-(deflisten workspaces "./niri-workspace/target/release/niri-workspace")
+(deflisten workspaces "./bin/target/release/niri-workspace")
 (deflisten volume
   :initial "{ 'value': 0, 'muted': true }"
-  "./volume/target/release/volume")
-(deflisten battery "./battery/target/release/battery")
+  "./bin/target/release/volume")
+(deflisten battery "./bin/target/release/battery")
 
 (defwidget workspaces [monitor]
   (box :orientation "h" 
@@ -14,7 +14,13 @@
           (box
             :class "workspace ${wsp.is_active ? 'active' : ''} ${arraylength(wsp.windows) == 0 ? 'empty' : ''}"
             (for win in "${wsp.windows}"
-              (box :halign "center" :class "column ${win.is_focused ? 'focused' : ''}"
+              (box
+                :halign "center"
+                :class "column ${
+                  win.is_focused ? 'focused'
+                  : win.is_urgent ? 'urgent'
+                  : ''
+                }"
                 (label :text "")))))))))
 
 (defwidget volume []
