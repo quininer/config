@@ -1,0 +1,92 @@
+(deflisten workspaces "./niri-workspace/target/release/niri-workspace")
+(deflisten volume
+  :initial "{ 'value': 0, 'muted': true }"
+  "./volume/target/release/volume")
+(deflisten battery "./battery/target/release/battery")
+
+(defwidget workspaces [monitor]
+  (box :orientation "h" 
+       :class "workspaces"
+       :space-evenly false
+    (for wsp in {"${workspaces.outputs[monitor].workspaces}"}
+      (eventbox :cursor "pointer"
+        (button :onclick "niri msg action focus-workspace ${wsp.index}"
+          (box
+            :class "workspace ${wsp.is_active ? 'active' : ''} ${arraylength(wsp.windows) == 0 ? 'empty' : ''}"
+            (for win in "${wsp.windows}"
+              (box :halign "center" :class "column ${win.is_focused ? 'focused' : ''}"
+                (label :text "")))))))))
+
+(defwidget volume []
+  (tooltip 
+    (label :class "tooltip" :text "${ volume.value }%")
+    (box :class "speakers"
+      :space-evenly false
+      (button :class "icon ${ volume.value > 100 ? 'over' : '' } ${ volume.muted ? 'muted' : '' }"
+        :onclick "pactl set-sink-mute @DEFAULT_SINK@ toggle"  
+        (label :text "${ volume.muted ? '󰖁' : 
+                        volume.value > 70 ? '󰕾' : 
+                        volume.value > 35 ? '󰖀' : 
+                        '󰕿' }"))
+      (label :text "${ volume.value }%")
+    )
+  )
+)
+
+(defwidget battery []
+  (box :class "battery"
+    :space-evenly false
+    (label :class "icon ${ battery.power <= 10 ? 'critical' : '' }"
+           :text "${ battery.charging ? '↯'
+                    : battery.power > 95 ? '󰁹' 
+                    : battery.power > 90 ? '󰂂' 
+                    : battery.power > 80 ? '󰂁' 
+                    : battery.power > 70 ? '󰂀' 
+                    : battery.power > 60 ? '󰁿' 
+                    : battery.power > 50 ? '󰁾' 
+                    : battery.power > 40 ? '󰁽' 
+                    : battery.power > 30 ? '󰁼' 
+                    : battery.power > 20 ? '󰁻' 
+                    : battery.power > 10 ? '󰁺' 
+                    : '󰂃' }")
+    (label :text "${battery.power}" :halign "center" :xalign 0.5 :justify "right")))
+
+(defwidget custom-tray []
+  (box
+    (volume)
+    (battery)
+  ))
+
+(defwidget datetime []
+  (label
+    :class "time"
+    :text "${ formattime(EWW_TIME, '「%m-%d / %H:%M」') }")
+)
+
+(defwindow bar
+           :monitor 0
+           :geometry (geometry :x 0
+                               :y "5px"
+                               :width "99%"
+                               :height "30px"
+                               :anchor "top center")
+           :stacking "fg"
+           :exclusive true
+           :windowtype "dock"
+
+  (box
+    (workspaces :monitor "eDP-1")
+    (box
+      :orientation "h"
+      :halign "end"
+      :space-evenly false
+      :spacing 10
+      (systray
+        :class "tray"
+        :space-evenly true
+        :spacing 10
+        :icon-size 20)
+      (custom-tray)
+      (datetime))
+  )
+)
