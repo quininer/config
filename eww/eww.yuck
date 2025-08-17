@@ -10,7 +10,12 @@
        :space-evenly false
     (for wsp in {"${workspaces.outputs[monitor].workspaces}"}
       (eventbox :cursor "pointer"
-        (button :onclick "niri msg action focus-workspace ${wsp.index}"
+        (button
+          :onclick "${
+            jq(wsp.windows,'any(.[]; .is_urgent == true)')
+            ? "niri msg action focus-window --id ${jq(wsp.windows,'map(select(.is_urgent == true))[0].id')}"
+            : "niri msg action focus-workspace ${wsp.index}"
+          }"
           (box
             :class "workspace ${wsp.is_active ? 'active' : ''} ${arraylength(wsp.windows) == 0 ? 'empty' : ''}"
             (for win in "${wsp.windows}"

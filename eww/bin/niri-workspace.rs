@@ -70,7 +70,7 @@ fn main() -> anyhow::Result<()> {
                     .find_map(|workspace| workspace.workspaces.get_mut(&ws_id))
                 {
                     workspace.windows.push(Window {
-                        id: ws_id,
+                        id: window.id,
                         is_focused: window.is_focused,
                         is_urgent: window.is_urgent,
                         pos: window.layout.pos_in_scrolling_layout.unwrap_or_default().0,
