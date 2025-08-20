@@ -51,7 +51,9 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    push(&mut line)?;    
+    if let Err(err) = push(&mut line) {
+        eprintln!("{}", err);
+    }
 
     loop {
         line.clear();
@@ -61,7 +63,9 @@ fn main() -> anyhow::Result<()> {
             continue
         }
 
-        push(&mut line)?;
+        if let Err(err) = push(&mut line) {
+            eprintln!("{}", err);
+        }
     }
 }
 
