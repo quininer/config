@@ -354,13 +354,18 @@ binds {
 
     // Example volume keys mappings for PipeWire & WirePlumber.
     // The allow-when-locked=true property makes them work even when the session is locked.
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
-    XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "bash" "-c" \
+        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "bash" "-c" \
+        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1- && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
+    XF86AudioMute        allow-when-locked=true { spawn "bash" "-c" \
+        "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
     XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
 
-    XF86MonBrightnessDown allow-when-locked=true { spawn "bash" "-c" "brightnessctl -c backlight set 10%- && notify-send -c \"system\" \" Brightness: $(brightnessctl -m | cut -d',' -f4)\""; }
-    XF86MonBrightnessUp   allow-when-locked=true { spawn "bash" "-c" "brightnessctl -c backlight set +10% && notify-send -c \"system\" \" Brightness: $(brightnessctl -m | cut -d',' -f4)\""; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "bash" "-c" \
+        "brightnessctl -c backlight set 10%- && notify-send -c 'system' \" Brightness: $(brightnessctl -m | cut -d',' -f4)\""; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "bash" "-c" \
+        "brightnessctl -c backlight set +10% && notify-send -c \"system\" \" Brightness: $(brightnessctl -m | cut -d',' -f4)\""; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
