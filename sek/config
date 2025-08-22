@@ -3,7 +3,7 @@
 cat << EOF
 {
 	"set-env": {
-		"EDITOR": "nvim"
+		"EDITOR": "helix"
 	},
 	"push-path": [
 		"$HOME/.local/bin",

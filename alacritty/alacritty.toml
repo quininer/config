@@ -43,15 +43,11 @@ unfocused_hollow = true
 TERM = "alacritty"
 
 [font]
-size = 17.0
+size = 14.0
 
 [font.bold]
 family = "Hack"
 style = "Bold"
-
-[font.glyph_offset]
-x = 0
-y = 0
 
 [font.italic]
 family = "Hack"
@@ -60,10 +56,6 @@ style = "Italic"
 [font.normal]
 family = "Hack"
 style = "Regular"
-
-[font.offset]
-x = 0
-y = 0
 
 [[keyboard.bindings]]
 action = "SpawnNewInstance"
