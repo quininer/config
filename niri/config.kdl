@@ -153,7 +153,7 @@ layout {
         // off
 
         // How many logical pixels the ring extends out from the windows.
-        width 4
+        width 2
 
         // Colors can be set in a variety of ways:
         // - CSS named colors: "red"
@@ -161,10 +161,10 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#7fc8ff50"
+        // active-color "#7fc8ff50"
 
         // Color of the ring on inactive monitors.
-        inactive-color "#50505000"
+        // inactive-color "#50505000"
 
         // You can also use gradients. They take precedence over solid colors.
         // Gradients are rendered the same as CSS linear-gradient(angle, from, to).
@@ -180,20 +180,23 @@ layout {
         // To do that, set relative-to="workspace-view".
         //
         // inactive-gradient from="#505050" to="#808080" angle=45 relative-to="workspace-view"
+
+        active-gradient from="purple" to="orange" angle=45 in="oklch longer hue"
     }
 
     // You can also add a border. It's similar to the focus ring, but always visible.
     border {
         // The settings are the same as for the focus ring.
         // If you enable the border, you probably want to disable the focus ring.
-        off
+        // off
 
-        width 4
-        active-color "#ffc87f"
-        inactive-color "#505050"
+        width 2
+        active-color "#000000"
+        // active-color "#ffc87f"
+        // inactive-color "#505050"
 
         // Color of the border around windows that request your attention.
-        urgent-color "#9b0000"
+        // urgent-color "#9b0000"
 
         // active-gradient from="#ffbb66" to="#ffc880" angle=45 relative-to="workspace-view"
         // inactive-gradient from="#505050" to="#808080" angle=45 relative-to="workspace-view"
@@ -322,7 +325,8 @@ window-rule {
 
 // Example: enable rounded corners for all windows.
 // (This example rule is commented out with a "/-" in front.)
-/-window-rule {
+window-rule {
+    draw-border-with-background false
     geometry-corner-radius 12
     clip-to-geometry true
 }
@@ -355,9 +359,9 @@ binds {
     // Example volume keys mappings for PipeWire & WirePlumber.
     // The allow-when-locked=true property makes them work even when the session is locked.
     XF86AudioRaiseVolume allow-when-locked=true { spawn "bash" "-c" \
-        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
+        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "bash" "-c" \
-        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1- && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
+        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05- && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
     XF86AudioMute        allow-when-locked=true { spawn "bash" "-c" \
         "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-send -c 'system' $(wpctl get-volume @DEFAULT_AUDIO_SINK@)"; }
     XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
@@ -590,4 +594,8 @@ binds {
     // The quit action will show a confirmation dialog to avoid accidental exits.
     // Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
+}
+
+environment {
+    XDG_MENU_PREFIX "arch-"
 }
