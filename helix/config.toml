@@ -26,6 +26,8 @@ insert = "bar"
 "A-k" = "jump_view_up"
 "A-l" = "jump_view_right"
 
+"F4" = ":toggle-option soft-wrap.enable"
+
 [keys.normal.","]
 "," = [ "collapse_selection", "keep_primary_selection" ] # clear select
 "n" = "file_picker_in_current_directory"

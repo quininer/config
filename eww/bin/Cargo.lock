@@ -133,8 +133,9 @@ checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 
 [[package]]
 name = "niri-ipc"
-version = "25.5.1"
-source = "git+https://github.com/YaLTeR/niri#9b622b1c8cee332b0dd5a92ba07242b3d0dc2198"
+version = "25.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a336854faf3818ec2399152c994796e2e8d723867f9987f1e0cfeaae1dadaed1"
 dependencies = [
  "serde",
  "serde_json",
