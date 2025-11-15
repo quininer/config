@@ -7,6 +7,7 @@ set -x PATH					$PATH $HOME/.local/bin $HOME/.cargo/bin
 set -x EDITOR				nvim
 set -x PAGER				less
 set -x SSH_ASKPASS			(which ksshaskpass)
+set -x SSH_AUTH_SOCK        $XDG_RUNTIME_DIR/ssh-agent.socket
 # set -x LD_LIBRARY_PATH		(rustc --print sysroot)/lib
 # set -x RUSTUP_DIST_SERVER	"https://mirrors.ustc.edu.cn/rust-static"
 
