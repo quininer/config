@@ -4,7 +4,7 @@ fish_vi_cursor
 set -x fish_cursor_insert	block
 
 set -x PATH					$PATH $HOME/.local/bin $HOME/.cargo/bin
-set -x EDITOR				nvim
+set -x EDITOR				helix
 set -x PAGER				less
 set -x SSH_ASKPASS			(which ksshaskpass)
 set -x SSH_AUTH_SOCK        $XDG_RUNTIME_DIR/ssh-agent.socket
@@ -16,7 +16,7 @@ alias ls	exa
 alias la	"exa -hal"
 alias grep	rg
 alias hx	helix
-alias aa16	"aria2c -k1M -j16 -x16 -s16 --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "(chromium --version | string replace "Chromium " "Chrome/" | string trim -r --chars="Arch Linux")" Safari/537.36'"
+# alias aa16	"aria2c -k1M -j16 -x16 -s16 --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "(chromium --version | string replace "Chromium " "Chrome/" | string trim -r --chars="Arch Linux")" Safari/537.36'"
 
 # color man
 set -x LESS_TERMCAP_md (printf "\e[01;31m")

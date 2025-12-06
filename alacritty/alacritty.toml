@@ -43,7 +43,7 @@ unfocused_hollow = true
 TERM = "alacritty"
 
 [font]
-size = 14.0
+size = 20.0
 
 [font.bold]
 family = "Hack"

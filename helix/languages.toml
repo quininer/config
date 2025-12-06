@@ -1,6 +1,13 @@
-[language-server.scls]
-command = "simple-completion-language-server"
-
 [[language]]
-name = "git-commit"
-language-servers = [ "scls" ]
+name = "typescript"
+shebangs = ["deno"]
+roots = ["deno.json", "deno.jsonc", "package.json"]
+language-servers = ["deno-lsp"]
+
+[language-server.deno-lsp]
+command = "deno"
+args = ["lsp"]
+
+[language-server.deno-lsp.config.deno]
+enable = true
+unstable = true
