@@ -1,0 +1,59 @@
+// Zed keymap
+//
+// For information on binding keys, see the Zed
+// documentation: https://zed.dev/docs/key-bindings
+//
+// To see the default key bindings run `zed: open default keymap`
+// from the command palette.
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      // "shift shift": "file_finder::Toggle"
+    },
+  },
+  {
+    "context": "Editor && vim_mode == insert",
+    "bindings": {
+      // "j k": "vim::NormalBefore"
+    },
+  },
+  {
+    "bindings": {
+      "ctrl-o": "tab_switcher::OpenInActivePane",
+      "alt-k": "workspace::ActivatePaneUp",
+      "alt-j": "workspace::ActivatePaneDown",
+      "alt-h": "workspace::ActivatePaneLeft",
+      "alt-l": "workspace::ActivatePaneRight",
+    },
+  },
+  {
+    "context": "Editor && vim_mode == helix_normal",
+    "bindings": {
+      ";": "command_palette::Toggle",
+    },
+  },
+  {
+    "context": "VimControl && !menu",
+    "unbind": {
+      "q": "vim::ToggleRecord",
+      "shift-q": "vim::ReplayLastRecording",
+    },
+  },
+  {
+    "context": "(vim_mode == helix_normal || vim_mode == helix_select) && !menu",
+    "bindings": {
+      "p": "editor::Paste",
+      ", n": "file_finder::Toggle",
+      ", ,": "vim::SwitchToNormalMode",
+      ", q": "pane::CloseActiveItem",
+      "d d": "editor::Cut",
+    },
+  },
+  {
+    "context": "vim_mode == insert",
+    "bindings": {
+      "alt-space": "vim::SwitchToHelixNormalMode",
+    },
+  },
+]
