@@ -9,10 +9,19 @@ cat << EOF
 		"$HOME/.local/bin",
 		"$HOME/.cargo/bin"
 	],
+	"prompt": {
+		"exe": "starship",
+		"args": ["prompt", "-s", "@status", "-w", "@width"]
+	},
+	"complete": {
+		"exe": "fish-as-a-complete-engine",
+		"args": ["-i", "@index"]
+	},
 	"alias": {
-		"ls": "exa",
-		"la": "exa -hal",
-		"wget": "curl -L -O -C -"
+		"ls": ["eza"],
+		"la": ["eza", "-hal"],
+		"hx": ["helix"],
+		"wget": ["curl", "-L", "-O", "-C", "-"]
 	}
 }
 EOF
