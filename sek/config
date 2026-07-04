@@ -10,8 +10,16 @@ cat << EOF
 		"$HOME/.cargo/bin"
 	],
 	"prompt": {
-		"exe": "starship",
-		"args": ["prompt", "-s", "@status", "-w", "@width"]
+		"exe": "bwrap",
+		"args": [
+			"--die-with-parent",
+			"--unshare-all",
+			"--cap-drop", "ALL",
+			"--ro-bind", "/", "/",
+			"--",
+			"starship",
+			"prompt", "-s", "@status", "-w", "@width"
+		]
 	},
 	"complete": {
 		"exe": "fish-as-a-complete-engine",
