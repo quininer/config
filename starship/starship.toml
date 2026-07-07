@@ -8,7 +8,6 @@
 
 add_newline = false
 format = """\
-  $golang$nodejs$python$rust \
   $directory \
   $git_branch$git_state$git_status \
   $character\
@@ -32,17 +31,3 @@ deleted = "x"
 
 [git_branch]
 format = "[$branch](bold fg:#8be9fd)"
-
-# Language Support
-[golang]
-format = "🐭"
-
-[nodejs]
-format = "🍏"
-detect_folders = [""]
-
-[python]
-format = '🐍[${pyenv_prefix}(${version})(\($virtualenv\))](bold fg:yellow)'
-
-[rust]
-format = "🦀"

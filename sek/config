@@ -3,7 +3,9 @@
 cat << EOF
 {
 	"set-env": {
-		"EDITOR": "helix"
+		"EDITOR": "helix",
+		"SSH_SSH_ASKPASS": "$(which ksshaskpass)",
+		"SSH_AUTH_SOCK": "$XDG_RUNTIME_DIR/ssh-agent.socket"
 	},
 	"push-path": [
 		"$HOME/.local/bin",
