@@ -1,0 +1,14 @@
+{
+  "lastChangelogVersion": "1.5.2",
+  "defaultTools": [
+    "+codemode"
+  ],
+  "packages": [
+    "npm:pi-vcc",
+    "npm:pi-simple-background-tasks"
+  ],
+  "hideThinkingBlock": true,
+  "extensionChangelogVersions": {
+    "{\"source\":\"npm:pi-vcc\",\"scope\":\"user\"}": "0.4.1"
+  }
+}

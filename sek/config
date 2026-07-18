@@ -5,7 +5,8 @@ cat << EOF
 	"set-env": {
 		"EDITOR": "helix",
 		"SSH_SSH_ASKPASS": "$(which ksshaskpass)",
-		"SSH_AUTH_SOCK": "$XDG_RUNTIME_DIR/ssh-agent.socket"
+		"SSH_AUTH_SOCK": "$XDG_RUNTIME_DIR/ssh-agent.socket",
+		"SEK_IPC_PATH": "$XDG_RUNTIME_DIR/sek/sek.ipc"
 	},
 	"push-path": [
 		"$HOME/.local/bin",
