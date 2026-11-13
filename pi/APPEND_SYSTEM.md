@@ -9,7 +9,8 @@
 * 优先使用 jj 而不是 git
 * 优先使用 rg 而不是 grep
 * 优先使用 curl 而不是 wget
+* 优先使用 `rm-glob \*` 而不是 `rm *`。mv、cp、ln 等命令同理
 * 优先使用项目内的 target/ 等临时目录，而不是 /tmp/
 * 避免防御性使用 rm
-* 当需要使用 `rm *` 时，使用 `rm-glob *`，mv、cp、ln 等命令同理
+* 避免防御性使用 sleep
 * 禁止擅自使用 gh-proxy.com 等代理站
