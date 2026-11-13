@@ -5,7 +5,11 @@
   ],
   "packages": [
     "npm:pi-vcc",
-    "npm:pi-simple-background-tasks"
+    "npm:pi-simple-background-tasks",
+    {
+      "source": "git:gitea.angry.im/PeterCxy/pi-extensions",
+      "extensions": ["bash-enforce-timeout/index.ts"]
+    }
   ],
   "hideThinkingBlock": true,
   "extensionChangelogVersions": {
