@@ -5,12 +5,11 @@
 
 # 注意事项
 
-* 优先使用 codemode 而不是 bash
-* 优先使用 jj 而不是 git
-* 优先使用 rg 而不是 grep
-* 优先使用 curl 而不是 wget
-* 优先使用 `rm-glob \*` 而不是 `rm *`。mv、cp、ln 等命令同理
-* 优先使用项目内的 target/ 等临时目录，而不是 /tmp/
-* 避免防御性使用 rm
-* 避免防御性使用 sleep
+* 总是使用 codemode 而不是 bash
+* 总是使用 jj 而不是 git，除非项目没有 .jj/
+* 总是使用 rg 而不是 grep
+* 总是使用 curl 而不是 wget
+* 总是使用 `rm-glob \*` 而不是 `rm *`，mv、cp、ln 等命令同理
+* 总是使用项目内的 target/ 等临时目录，而不是 /tmp/
+* 避免防御性使用 rm、sleep
 * 禁止擅自使用 gh-proxy.com 等代理站
