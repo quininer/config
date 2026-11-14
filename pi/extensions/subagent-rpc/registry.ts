@@ -4,8 +4,11 @@
  * Semantics (deliberate): one subagent = one task. The child is spawned, given
  * its first prompt, and can be talked to while it runs (`steer`, `follow_up`,
  * `prompt`, plus the TUI view). When the child reports `agent_settled`, the task
- * is over: the record is kept for inspection, the child is shut down, and the
- * parent session is woken up with the result.
+ * is over: the record is kept for inspection and the parent session is woken up
+ * with the result. A task that *settled* has its child shut down; a task that
+ * ended badly (provider/service error, abort, unexpected exit) is recorded as
+ * `failed`/`aborted` and its child is kept alive so `resume()` can continue it
+ * in place with the whole context still in place.
  *
  * State lives in a module-level instance because the child has to outlive the
  * tool call that created it. Nothing is started from the extension factory:
@@ -16,17 +19,36 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
-import { RpcSubagentProcess, RpcTimeoutError, type RpcRecord, type UiRequest } from "./rpc-client.ts";
+import {
+	RpcSubagentProcess,
+	RpcTimeoutError,
+	type ExitInfo,
+	type RpcProcessLike,
+	type RpcProcessOptions,
+	type RpcRecord,
+	type UiRequest,
+} from "./rpc-client.ts";
+import {
+	findBwrap,
+	piSandboxOptions,
+	prepareTranscript,
+	sandboxAvailability,
+	wrapSandboxed,
+} from "./sandbox.ts";
 import {
 	childEnv,
 	currentDepth,
 	ellipsize,
 	emptyUsage,
+	errorSignalFromRetry,
+	errorSignalFromStop,
 	formatToolCallText,
 	inheritableCliFlags,
 	isFinished,
+	isResumable,
 	oneLine,
 	resolvePiInvocation,
+	type StatusTone,
 	type SubagentStatus,
 	type UsageStats,
 } from "./utils.ts";
@@ -35,7 +57,32 @@ const MAX_ITEMS = 400;
 const MAX_ITEM_CHARS = 4_000;
 const MAX_TOTAL_ITEM_CHARS = 400_000;
 const MAX_STDERR_CHARS = 32 * 1024;
+/** How long a failed/aborted subagent keeps nagging in the footer status line. */
+const STATUS_LINE_MEMORY_MS = 10 * 60_000;
 export const MAX_RUNNING_SUBAGENTS = 8;
+/**
+ * Tool selection for a read-only subagent. `bash` stays, because research and
+ * review without a shell is useless (`jj log`, `git diff`, pipelines): the
+ * read-only guarantee comes from the bubblewrap sandbox the child runs in, not
+ * from this list. `--tools` with plain names replaces the whole selection, so
+ * extension tools (codemode and friends) drop out too.
+ */
+export const READONLY_TOOLS = ["read", "grep", "find", "ls", "bash"];
+/** Tools that change state directly, dropped from a read-only request. */
+const MUTATING_TOOLS = new Set(["write", "edit", "codemode"]);
+const READONLY_PREAMBLE =
+	"## Read-only mode (research and review)\n\n" +
+	"This subagent investigates and reviews; it does not change anything. The process runs inside a " +
+	"bubblewrap sandbox: everything you work with - the workspace, your home, the config files - is read-only, " +
+	"the network is available, the host's device nodes do not exist in here (`/dev/sda`, `/dev/mem`) - though " +
+	"`/dev/null` does - and the only file you can write is this task's transcript. Writes fail at the syscall - do not retry them or try to work around them.\n\n" +
+	"Do: read code, search, `jj log` / `jj show` / `jj diff`, `git log` / `git diff` / `git status`, run " +
+	"read-only checks, and fetch docs or sources over the network. Deliver findings as text: what you " +
+	"checked, concrete file:line evidence, risks and repro steps, and the patch you would apply - as a " +
+	"proposal, never applied.";
+/** Default nudge sent to a live child when the user resumes without a message. */
+export const DEFAULT_RESUME_TEXT =
+	"Your previous turn was interrupted by a provider or service error. Continue the current task from where you stopped.";
 const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 export const WAKE_TEXT_LIMIT = 4_000;
 
@@ -74,9 +121,19 @@ export interface Subagent {
 	lastActivityAt: number;
 	outputChars: number;
 	pendingDialogs: number;
+	/** Inspection-only child: sandboxed, and no state-changing tools. */
+	readOnly: boolean;
+	/** Kernel-level enforcement backing a read-only child, e.g. "bwrap". */
+	sandbox?: string;
+	/** Tool names the child was actually started with (read-only requests get the preset). */
+	tools?: string;
+	/** Last provider/model error seen, cleared when a later turn succeeds. */
+	lastError?: string;
+	/** Child is inside pi's automatic retry loop right now. */
+	retrying: boolean;
 	/** Set before a user-requested kill so the exit is not reported as a crash. */
 	killRequested?: boolean;
-	proc?: RpcSubagentProcess;
+	proc?: RpcProcessLike;
 	cleanup?: () => void;
 }
 
@@ -87,12 +144,16 @@ export interface StartOptions {
 	model?: string;
 	thinking?: string;
 	tools?: string[];
+	/** Inspection only: read-only tools, MCP off, and a read-only system prompt. */
+	readOnly?: boolean;
 	systemPrompt?: string;
 	label?: string;
 }
 
 export interface RegistryHooks {
 	notify(message: string, level?: "info" | "warning" | "error"): void;
+	/** Any state change: the extension uses this to refresh the footer status. */
+	onChanged(): void;
 	/** Task finished: the extension uses this to wake the parent model. */
 	onSettled(subagent: Subagent): void;
 	/**
@@ -101,6 +162,12 @@ export interface RegistryHooks {
 	 * parent has no terminal to show it in.
 	 */
 	answerDialog(subagent: Subagent, request: UiRequest): Promise<Record<string, unknown> | undefined>;
+}
+
+/** One colored segment of the footer status line. */
+export interface StatusLinePart {
+	text: string;
+	tone: StatusTone;
 }
 
 export interface StatusView {
@@ -146,12 +213,35 @@ async function writeSystemPrompt(name: string, prompt: string): Promise<{ dir: s
 export class SubagentRegistry {
 	private readonly agents = new Map<string, Subagent>();
 	private readonly answeredDialogs = new Set<string>();
+	private readonly listeners = new Set<() => void>();
 	private itemIds = 0;
 
 	constructor(
 		private readonly hooks: RegistryHooks,
 		private readonly defaultCwd: string,
-	) {}
+		/** Injection seam: the real `pi --mode rpc` child can be swapped for a fake one. */
+		private readonly createProcess: (options: RpcProcessOptions) => RpcProcessLike = (options) =>
+			new RpcSubagentProcess(options),
+		/** Injection seam: lets a caller decide whether bubblewrap is available. */
+		private readonly resolveSandbox: () => { ok: boolean; bwrap?: string; reason?: string } = () =>
+			sandboxAvailability(),
+		) {}
+
+	/** Observe state changes; returns an unsubscribe function. */
+	subscribe(listener: () => void): () => void {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
+	}
+
+	private emit(): void {
+		for (const listener of [...this.listeners]) {
+			try {
+				listener();
+			} catch {
+				// A broken listener must never break the child event pipeline.
+			}
+		}
+	}
 
 	list(): Subagent[] {
 		return [...this.agents.values()].sort((a, b) => b.startedAt - a.startedAt);
@@ -196,7 +286,7 @@ export class SubagentRegistry {
 		if (!task) throw new Error("task is required");
 		if (this.runningCount() >= MAX_RUNNING_SUBAGENTS) {
 			throw new Error(
-				`subagent limit reached (${MAX_RUNNING_SUBAGENTS} running); interrupt or kill one first (see /subagents)`,
+				`subagent limit reached (${MAX_RUNNING_SUBAGENTS} running); interrupt or kill one first (see /subagent)`,
 			);
 		}
 
@@ -212,12 +302,32 @@ export class SubagentRegistry {
 		const args = ["--mode", "rpc", "--no-session", ...inheritableCliFlags(process.argv.slice(2), this.defaultCwd)];
 		if (options.model) args.push("--model", options.model);
 		if (options.thinking) args.push("--thinking", options.thinking);
-		if (options.tools?.length) args.push("--tools", options.tools.join(","));
 		if (options.label) args.push("--name", options.label);
 
+		// Tools: an exact selection normally, the read-only preset when asked. MCP
+		// tools are not covered by `--tools`, so read-only also disables MCP.
+		let tools = options.tools?.length ? [...options.tools] : undefined;
+		let readOnlyNote: string | undefined;
+		if (options.readOnly) {
+			const dropped = (tools ?? []).filter((tool) => MUTATING_TOOLS.has(tool) || tool.startsWith("mcp__"));
+			const kept = (tools ?? []).filter((tool) => !MUTATING_TOOLS.has(tool) && !tool.startsWith("mcp__"));
+			tools = kept.length > 0 ? kept : [...READONLY_TOOLS];
+			if (dropped.length > 0) readOnlyNote = `dropped ${dropped.join(", ")}: not read-only`;
+			args.push("--tools", tools.join(","));
+			if (!args.includes("--no-mcp")) args.push("--no-mcp");
+		} else if (tools?.length) {
+			args.push("--tools", tools.join(","));
+		}
+
+		const systemPrompt = options.readOnly
+			? [READONLY_PREAMBLE, options.systemPrompt?.trim()].filter(Boolean).join("\n\n")
+			: options.systemPrompt?.trim();
+
 		let cleanup: (() => void) | undefined;
-		if (options.systemPrompt?.trim()) {
-			const written = await writeSystemPrompt(name, options.systemPrompt);
+		let systemPromptFile: string | undefined;
+		if (systemPrompt) {
+			const written = await writeSystemPrompt(name, systemPrompt);
+			systemPromptFile = written.file;
 			cleanup = () => {
 				try {
 					fs.rmSync(written.dir, { recursive: true, force: true });
@@ -231,6 +341,19 @@ export class SubagentRegistry {
 		const transcriptPath = path.join(transcriptDirFor(id), "transcript.jsonl");
 		await fs.promises.mkdir(path.dirname(transcriptPath), { recursive: true });
 
+		// A read-only child runs inside bubblewrap: read-only filesystem, network on,
+		// no host device nodes, and its transcript file as the only writable host path.
+		let sandbox: string | undefined;
+		if (options.readOnly) {
+			prepareTranscript(transcriptPath);
+			const availability = this.resolveSandbox();
+			if (!availability.ok || !availability.bwrap) {
+				cleanup?.();
+				throw new Error(`read-only subagent needs a sandbox: ${availability.reason ?? "sandbox unavailable"}`);
+			}
+			sandbox = "bwrap";
+		}
+
 		const subagent: Subagent = {
 			id,
 			name,
@@ -240,12 +363,16 @@ export class SubagentRegistry {
 			startedAt: Date.now(),
 			usage: emptyUsage(),
 			turnCount: 0,
+			retrying: false,
 			items: [],
 			lastAssistantText: "",
 			stderr: "",
 			transcriptPath,
 			transcriptQueue: Promise.resolve(),
 			streaming: false,
+			readOnly: options.readOnly === true,
+			...(sandbox ? { sandbox } : {}),
+			...(tools?.length ? { tools: tools.join(",") } : {}),
 			typing: false,
 			lastActivityAt: Date.now(),
 			outputChars: 0,
@@ -254,12 +381,23 @@ export class SubagentRegistry {
 		};
 		this.agents.set(id, subagent);
 
-		const invocation = resolvePiInvocation(args);
-		const proc = new RpcSubagentProcess({
+		const env = childEnv(process.env, { readOnly: options.readOnly === true, sandbox });
+		let invocation = resolvePiInvocation(args);
+		if (options.readOnly && sandbox) {
+			const agentDir = getAgentDir();
+			invocation = wrapSandboxed(
+				findBwrap() ?? "bwrap",
+				invocation.command,
+				invocation.args,
+				piSandboxOptions({ transcriptPath, cwd, systemPromptFile }),
+			);
+		}
+
+		const proc = this.createProcess({
 			command: invocation.command,
 			args: invocation.args,
 			cwd,
-			env: childEnv(),
+			env,
 			handlers: {
 				onEvent: (event) => this.handleEvent(subagent, event),
 				onUiRequest: (request) => void this.handleUiRequest(subagent, request),
@@ -284,6 +422,14 @@ export class SubagentRegistry {
 
 		subagent.pid = proc.pid;
 		this.push(subagent, "system", `spawned pid ${proc.pid ?? "?"} in ${cwd}`);
+		if (options.readOnly) {
+			this.push(
+				subagent,
+				"system",
+				`read-only: bwrap sandbox (workspace read-only, only ${path.basename(transcriptPath)} writable, net on, no host devices), tools ${tools?.join(", ") ?? "?"}`,
+			);
+			if (readOnlyNote) this.push(subagent, "system", `⚠ ${readOnlyNote}`);
+		}
 
 		// Best-effort: report the child's effective model without blocking startup.
 		void proc
@@ -316,9 +462,10 @@ export class SubagentRegistry {
 	async send(id: string, message: string, mode: "auto" | "steer" | "follow_up" | "prompt"): Promise<string> {
 		const subagent = this.mustFind(id);
 		if (isFinished(subagent.status) || !subagent.proc?.alive) {
-			throw new Error(
-				`subagent ${subagent.id} already finished (${subagent.status}); start a new subagent for more work`,
-			);
+			const hint = canResume(subagent)
+				? `resume it with action "resume" to continue where it stopped`
+				: `start a new subagent for more work`;
+			throw new Error(`subagent ${subagent.id} already finished (${subagent.status}); ${hint}`);
 		}
 		const text = message.trim();
 		if (!text) throw new Error("message is required");
@@ -338,6 +485,42 @@ export class SubagentRegistry {
 		}
 		this.push(subagent, "input", `→ ${resolved.replace("_", "-")} ${disposition}: ${oneLine(text, 160)}`);
 		return disposition;
+	}
+
+	/**
+	 * Continue a task that stopped early (provider/service error, abort) by
+	 * prompting its still-live child, so the child keeps everything it already
+	 * did. Restarting from scratch is deliberately not supported: a `--no-session`
+	 * child has no session file to resume, so a fresh child would start from zero.
+	 */
+	async resume(id: string, message?: string): Promise<string> {
+		const subagent = this.mustFind(id);
+		if (!isFinished(subagent.status)) {
+			throw new Error(`subagent ${subagent.id} is ${subagent.status}; use action "send" while it runs`);
+		}
+		if (subagent.status === "settled") {
+			throw new Error(`subagent ${subagent.id} finished its task; start a new subagent for more work`);
+		}
+		if (!subagent.proc?.alive) {
+			throw new Error(`subagent ${subagent.id} has no live child to resume (${subagent.status}); start a new subagent`);
+		}
+
+		const text = message?.trim() || DEFAULT_RESUME_TEXT;
+		let disposition: string;
+		try {
+			disposition = (await subagent.proc.prompt(text)).disposition ?? "started";
+		} catch (error) {
+			throw new Error(`resume failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
+
+		subagent.status = "running";
+		subagent.endedAt = undefined;
+		subagent.note = undefined;
+		subagent.lastError = undefined;
+		subagent.retrying = false;
+		this.push(subagent, "system", "↻ resumed (child kept its context)");
+		this.push(subagent, "input", `→ resume ${disposition}: ${oneLine(text, 160)}`);
+		return `resumed (${disposition})`;
 	}
 
 	/** Abort the current run; the task then settles as aborted. */
@@ -414,7 +597,7 @@ export class SubagentRegistry {
 
 	private mustFind(id: string): Subagent {
 		const found = this.resolve(id);
-		if (!found) throw new Error(`unknown subagent id: ${id} (see /subagents or action "list")`);
+		if (!found) throw new Error(`unknown subagent id: ${id} (see /subagent or action "list")`);
 		return found;
 	}
 
@@ -459,9 +642,33 @@ export class SubagentRegistry {
 			case "compaction_start":
 				this.push(subagent, "system", "compacting context");
 				break;
-			case "retry_scheduled":
+			case "auto_retry_start": {
+				// pi is retrying the failed request on its own; only the last word matters.
+				const signal = errorSignalFromRetry(event);
+				if (signal.kind === "error") subagent.lastError = signal.text;
+				subagent.retrying = true;
+				const delay = Math.round(Number(event.delayMs ?? 0) / 1000);
+				this.push(
+					subagent,
+					"system",
+					`↻ provider error, retry ${event.attempt ?? 1}/${event.maxAttempts ?? "?"} in ${delay}s: ${oneLine(subagent.lastError ?? "provider error", 200)}`,
+				);
+				break;
+			}
+			case "auto_retry_end": {
+				subagent.retrying = false;
+				const signal = errorSignalFromRetry(event);
+				if (signal.kind === "clear") {
+					subagent.lastError = undefined;
+					this.push(subagent, "system", `✓ recovered after ${event.attempt ?? 1} retries`);
+				} else if (signal.kind === "error") {
+					subagent.lastError = signal.text;
+					this.push(subagent, "error", `✗ giving up after ${event.attempt ?? 1} retries: ${oneLine(signal.text, 300)}`);
+				}
+				break;
+			}
 			case "summarization_retry_scheduled":
-				this.push(subagent, "system", "retry scheduled");
+				this.push(subagent, "system", `retry scheduled (compaction): ${oneLine(String(event.errorMessage ?? ""), 200)}`);
 				break;
 			case "message_update":
 				this.markTyping(subagent);
@@ -501,8 +708,14 @@ export class SubagentRegistry {
 			const model = message.model as string | undefined;
 			const provider = message.provider as string | undefined;
 			if (model) subagent.model = provider ? `${provider}/${model}` : model;
-			if (message.stopReason === "error" && message.errorMessage) {
-				this.push(subagent, "error", String(message.errorMessage));
+			const signal = errorSignalFromStop(message.stopReason, message.errorMessage);
+			if (signal.kind === "error") {
+				subagent.lastError = signal.text;
+				this.push(subagent, "error", signal.text);
+			} else if (signal.kind === "clear") {
+				// A turn that ended normally clears any earlier provider error.
+				subagent.lastError = undefined;
+				subagent.retrying = false;
 			}
 
 			let text = "";
@@ -538,6 +751,7 @@ export class SubagentRegistry {
 		if (!subagent.typing) {
 			subagent.typing = true;
 			subagent.lastActivityAt = Date.now();
+			this.emit();
 		}
 		if (subagent.typingTimer) clearTimeout(subagent.typingTimer);
 		const timer = setTimeout(() => {
@@ -548,20 +762,39 @@ export class SubagentRegistry {
 		subagent.typingTimer = timer;
 	}
 
-	private finish(subagent: Subagent, status: "settled" | "aborted"): void {
+	private finish(subagent: Subagent, outcome: "settled" | "aborted"): void {
 		if (isFinished(subagent.status)) return;
+
+		// A run that ended because the provider kept failing is not a completed task.
+		const failed = outcome === "settled" && Boolean(subagent.lastError);
+		const status: SubagentStatus = failed ? "failed" : outcome;
 		subagent.status = status;
 		subagent.endedAt = Date.now();
-		this.push(subagent, "system", status === "settled" ? "✓ task settled" : "⊘ task aborted");
+		if (failed) subagent.note = oneLine(subagent.lastError ?? "model error", 300);
+		this.push(
+			subagent,
+			status === "settled" ? "system" : "error",
+			status === "settled"
+				? "✓ task settled"
+				: status === "aborted"
+					? "⊘ task aborted"
+					: `✗ task failed: ${subagent.note}`,
+		);
 
 		if (!subagent.lastAssistantText) {
 			const lastText = [...subagent.items].reverse().find((item) => item.kind === "text");
 			if (lastText) subagent.lastAssistantText = lastText.text;
 		}
 
-		subagent.cleanup?.();
-		// Orderly shutdown of the child now that the task is over.
-		void subagent.proc?.stop().catch(() => undefined);
+		if (status === "settled") {
+			subagent.cleanup?.();
+			// Orderly shutdown of the child now that the task is over.
+			void subagent.proc?.stop().catch(() => undefined);
+		} else {
+			// Keep the child alive: resume() continues this task in place. Kill it
+			// with action "kill" (or /subagent-kill --force) to free the process.
+			this.push(subagent, "system", `child kept alive to resume: subagent{action:"resume", id:"${subagent.id}"}`);
+		}
 		this.hooks.onSettled(subagent);
 	}
 
@@ -595,6 +828,7 @@ export class SubagentRegistry {
 		subagent.status = errored ? "failed" : "exited";
 		subagent.note = errored ? crashed : subagent.note ?? "child exited";
 		subagent.endedAt = Date.now();
+		if (errored) subagent.lastError = crashed;
 		this.push(subagent, "error", `${crashed}${subagent.stderr.trim() ? `\nstderr: ${oneLine(subagent.stderr.trim(), 400)}` : ""}`);
 		this.hooks.onSettled(subagent);
 	}
@@ -652,6 +886,7 @@ export class SubagentRegistry {
 		while (subagent.items.length > MAX_ITEMS || (total > MAX_TOTAL_ITEM_CHARS && subagent.items.length > 20)) {
 			total -= subagent.items.shift()?.text.length ?? 0;
 		}
+		this.emit();
 	}
 
 	private appendTranscript(subagent: Subagent, record: unknown): void {
@@ -675,6 +910,15 @@ export function formatStatusText(subagent: Subagent, tailItems: number): string 
 	lines.push(
 		`usage: ${subagent.usage.turns || subagent.turnCount} turns ↑${subagent.usage.input} ↓${subagent.usage.output} $${subagent.usage.cost.toFixed(4)} ctx:${subagent.usage.contextTokens}`,
 	);
+	if (subagent.readOnly) {
+		lines.push(
+			`read-only: ${subagent.sandbox ?? "bwrap"} sandbox - workspace and config read-only (only the transcript is writable), network on, no host devices`,
+		);
+		lines.push(`tools: ${subagent.tools ?? "read, grep, find, ls, bash"}`);
+	}
+	if (canResume(subagent)) {
+		lines.push(`resumable: yes - subagent{action:"resume", id:"${subagent.id}"} continues this child in place`);
+	}
 	lines.push(`transcript: ${subagent.transcriptPath}`);
 	const tail = subagent.items.slice(-Math.max(1, tailItems));
 	if (tail.length > 0) {
@@ -689,6 +933,62 @@ export function formatStatusText(subagent: Subagent, tailItems: number): string 
 	return lines.join("\n");
 }
 
+/** Whether `resume()` can continue this record: a bad ending with a live child. */
+export function canResume(subagent: Subagent): boolean {
+	return isResumable(subagent.status) && Boolean(subagent.proc?.alive);
+}
+
+/**
+ * Deliver a human instruction: steer a running task, or continue one that
+ * stopped early. A stopped-but-live subagent still takes instructions, so there
+ * is no separate "retry" entry point to remember. Returns user-facing text.
+ */
+export async function deliverMessage(store: SubagentRegistry, id: string, text: string): Promise<string> {
+	const target = store.resolve(id);
+	if (target && canResume(target)) {
+		const outcome = await store.resume(target.id, text.trim() || undefined);
+		return `${outcome} ${target.id} (its child kept the context)`;
+	}
+	const disposition = await store.send(id, text, "auto");
+	return `sent (${disposition}) to ${id}`;
+}
+
+/**
+ * Segments for the parent's footer status line: running/typing counts, waiting
+ * dialogs, and recent failures. Empty when there is nothing to report.
+ */
+export function statusLineParts(agents: Subagent[], now = Date.now()): StatusLinePart[] {
+	const running = agents.filter((agent) => !isFinished(agent.status));
+	const dialogs = agents.filter((agent) => agent.pendingDialogs > 0);
+	// Failures stop nagging once they are older than this window.
+	const recent = agents.filter(
+		(agent) =>
+			(agent.status === "failed" || agent.status === "aborted") &&
+			now - (agent.endedAt ?? agent.lastActivityAt) < STATUS_LINE_MEMORY_MS,
+	);
+
+	const parts: StatusLinePart[] = [];
+	if (running.length > 0) {
+		const names = running
+			.slice(0, 2)
+			.map((agent) => oneLine(agent.name, 20))
+			.join(", ");
+		const busy = running.some((agent) => agent.typing || agent.retrying);
+		parts.push({
+			text: `${busy ? "▌" : "⏳"} sub ${running.length}${names ? ` ${names}` : ""}${running.length > 2 ? "…" : ""}`,
+			tone: running.every((agent) => agent.retrying) ? "warning" : "accent",
+		});
+	}
+	if (dialogs.length > 0) parts.push({ text: `⚑ ${dialogs.length} dialog`, tone: "warning" });
+	if (recent.length > 0) {
+		const failed = recent.filter((agent) => agent.status === "failed").length;
+		const aborted = recent.length - failed;
+		const bits = [failed ? `${failed} failed` : "", aborted ? `${aborted} aborted` : ""].filter(Boolean).join(" + ");
+		parts.push({ text: `✗ ${bits}${recent.every(canResume) ? " ↻" : ""}`, tone: "error" });
+	}
+	return parts;
+}
+
 /** Compact one-line-per-agent listing for the model. */
 export function formatListText(agents: Subagent[]): string {
 	if (agents.length === 0) return "no subagents in this session";
@@ -701,8 +1001,10 @@ export function formatListText(agents: Subagent[]): string {
 				`turns=${agent.turnCount}`,
 				`$${agent.usage.cost.toFixed(4)}`,
 				`${elapsed}s`,
+				agent.readOnly ? "ro" : "",
 				agent.model ?? "",
 				agent.streaming ? "streaming" : "",
+				canResume(agent) ? "resumable" : "",
 				last ? `· ${oneLine(last.text, 80)}` : "",
 			]
 				.filter(Boolean)

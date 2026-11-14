@@ -14,6 +14,8 @@ import { formatReadLineRange } from "@earendil-works/pi-coding-agent";
 
 /** Env marker carrying how deep this pi process sits inside a subagent chain. */
 export const DEPTH_ENV = "PI_SUBAGENT_DEPTH";
+/** Set in a read-only child's environment; informational, the sandbox does the enforcing. */
+export const READONLY_ENV = "PI_SUBAGENT_READONLY";
 
 /** Session-specific env vars that must not leak into a subagent child. */
 const STRIPPED_CHILD_ENV = [
@@ -161,6 +163,44 @@ export function isFinished(status: SubagentStatus): boolean {
 }
 
 /**
+ * Effect of a child event on the "did the provider break?" flag.
+ * `error` sets the message, `clear` means a later turn succeeded, `keep` means
+ * the event says nothing either way.
+ */
+export type ErrorSignal = { kind: "error"; text: string } | { kind: "clear" } | { kind: "keep" };
+
+const KEEP: ErrorSignal = { kind: "keep" };
+
+function nonEmpty(value: unknown): string | undefined {
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+/** An assistant message that ended in `error` is how a provider failure surfaces. */
+export function errorSignalFromStop(stopReason: unknown, errorMessage: unknown): ErrorSignal {
+	if (stopReason === "error") return { kind: "error", text: nonEmpty(errorMessage) ?? "model error" };
+	// Any other recorded end reason (stop, toolUse, aborted) means this turn is over cleanly.
+	return stopReason === undefined || stopReason === null ? KEEP : { kind: "clear" };
+}
+
+/** pi's own retry loop: a scheduled retry is an error, a successful end clears it. */
+export function errorSignalFromRetry(event: Record<string, any>): ErrorSignal {
+	if (event.type === "auto_retry_start") return { kind: "error", text: nonEmpty(event.errorMessage) ?? "provider error" };
+	if (event.type === "auto_retry_end") {
+		return event.success ? { kind: "clear" } : { kind: "error", text: nonEmpty(event.finalError) ?? "provider error" };
+	}
+	return KEEP;
+}
+
+/**
+ * A task that ended badly (provider error, abort, unexpected exit) can be
+ * resumed in place *if its child is still alive* - see `resume()` in the
+ * registry. A `settled` task completed its work: more work means a new subagent.
+ */
+export function isResumable(status: SubagentStatus): boolean {
+	return status === "failed" || status === "aborted" || status === "exited";
+}
+
+/**
  * Resolve how to launch another pi process.
  *
  * Mirrors the official subagent example: prefer the current CLI entry so a
@@ -196,13 +236,21 @@ export function currentDepth(): number {
 /**
  * Environment for a child pi: drop parent session identity so the child's own
  * shell commands do not read parent session data, and bump the recursion depth.
+ * `readOnly` and `sandbox` are informational markers (`PI_SUBAGENT_*`).
  */
-export function childEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+export function childEnv(
+	env: NodeJS.ProcessEnv = process.env,
+	options: { readOnly?: boolean; sandbox?: string } = {},
+): NodeJS.ProcessEnv {
 	const next: NodeJS.ProcessEnv = { ...env };
 	for (const key of STRIPPED_CHILD_ENV) delete next[key];
+	delete next[READONLY_ENV];
+	if (options.readOnly) next[READONLY_ENV] = "1";
+	if (options.sandbox) next.PI_SUBAGENT_SANDBOX = options.sandbox;
 	next[DEPTH_ENV] = String(currentDepth() + 1);
 	return next;
 }
+
 
 const INHERITED_VALUE_FLAGS = new Set(["--extension", "-e", "--skill", "--theme"]);
 const INHERITED_SWITCH_FLAGS = new Set([

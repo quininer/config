@@ -52,6 +52,25 @@ export interface RpcProcessOptions {
 	handlers: RpcProcessHandlers;
 }
 
+/**
+ * The child-process surface the registry uses. Keeping it as an interface lets a
+ * caller supply a fake child and drive the whole lifecycle without spawning pi.
+ */
+export interface RpcProcessLike {
+	readonly pid: number | undefined;
+	readonly alive: boolean;
+	start(): void;
+	prompt(message: string, streamingBehavior?: "steer" | "followUp"): Promise<{ disposition?: string }>;
+	steer(message: string): Promise<{ disposition?: string }>;
+	followUp(message: string): Promise<{ disposition?: string }>;
+	abort(timeoutMs?: number): Promise<unknown>;
+	clearQueue(): Promise<{ steering?: string[]; followUp?: string[] }>;
+	getState(timeoutMs?: number): Promise<RpcRecord>;
+	answerUi(id: string, payload: Record<string, unknown>): void;
+	describeExit(info?: ExitInfo): string;
+	stop(options?: { force?: boolean; graceMs?: number; killGraceMs?: number }): Promise<void>;
+}
+
 /** Dialog methods that block the child until the client answers. */
 const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
 
@@ -72,7 +91,7 @@ interface PendingRequest {
 	type: string;
 }
 
-export class RpcSubagentProcess {
+export class RpcSubagentProcess implements RpcProcessLike {
 	private proc: ChildProcessByStdio<Writable, Readable, Readable> | null = null;
 	private pending: Buffer = Buffer.alloc(0);
 	private nextId = 0;
