@@ -9,20 +9,27 @@
  * instead of discouraging it. A block costs one retry and the retry is the lesson; a
  * warning is skimmed.
  *
- * Blocks: `$(…)`, backticks, `<(…)`, `;`, `&&`, `||`, several lines, `<<EOF`, `( … )`,
- * `{ …; }`, background `&`, `for`/`while`/`if`/`case`/`eval`, and `sh -c '…'` around
- * any of it. Allows: one command with its quoting and redirection, plus one pipe
- * (`rg foo src | head`), which is more idiomatic in a shell than anywhere else. The
- * scan is quote-aware, so `awk '{print $1}'` and `rg 'a|b'` are not findings; `$((…))`
- * is arithmetic; a trailing `;`, a trailing newline and `# comments` are formatting.
+ * Blocks: `$(…)`, backticks, `<(…)`, any pipe, `;`, `&&`, `||`, several lines, `<<EOF`,
+ * `( … )`, `{ …; }`, background `&`, `for`/`while`/`if`/`case`/`eval`, and `sh -c '…'`
+ * around any of it. Allows: one command with its arguments, quoting and redirection —
+ * `rg foo src`, `make build > target/log`, `awk '{print $1}' f`. Even a single pipe
+ * composes commands, so `rg foo src | head` is codemode's job: filtering output is
+ * `output.split("\n").filter(…)`, not a pipeline. The scan is quote-aware, so
+ * `awk '{print $1}'` and `rg 'a|b'` are not findings; `$((…))` is arithmetic; a trailing
+ * `;`, a trailing newline and `# comments` are formatting.
  *
- * Not checked: a call another tool made (`parentToolCallId` — `tools.bash` inside a
- * codemode script; this guard pushed composition *into* codemode, it must not fight it
- * there), and anything at all while codemode is not an active tool, since a read-only
- * subagent given `read,grep,find,ls,bash` has nowhere to put the work. Hidden
- * indirection (`C='a && b'; sh -c "$C"`) is invisible too: the scan is lexical on
- * purpose, because a real parser would false-positive on half of the harmless commands
- * in a session.
+ * Checked everywhere, including inside codemode: `tools.bash` called from a codemode
+ * script (`parentToolCallId`) is still a `bash` call, and models compose shell there
+ * just as happily. A blocked call rejects, which throws and aborts the whole script, so
+ * every `tools.bash` call has to be one plain command from the start. codemode composes
+ * *results* in JavaScript; a shell program behind one `tools.bash` call is the same
+ * mistake one layer down, and gets a reason saying so rather than being told to go find
+ * codemode. The guard stays inert only while codemode is not an active tool, since a
+ * read-only subagent given `read,grep,find,ls,bash` has nowhere to put the work.
+ *
+ * Blind spots: hidden indirection (`C='a && b'; sh -c "$C"`) and an unrelated program's
+ * option that runs a shell itself. The scan is lexical on purpose — a real parser would
+ * false-positive on half of the harmless commands in a session.
  *
  * The model is told the rule, never the construct it hit — naming `&&` hands it
  * something to route around — while findings go to the TUI notification, where a human
@@ -66,31 +73,21 @@ interface Finding {
 	kind: FindingKind;
 	/** What was seen, e.g. "`&&` and newlines join 3 commands". */
 	detail: string;
-	/**
-	 * Soft findings are the ones that can be argued about. Pipelines are the only
-	 * soft kind: `rg foo src | head` composes commands, but it is also the single
-	 * most idiomatic thing a shell does, so the default is to let it through.
-	 */
-	soft: boolean;
 }
 
 interface AnalysisOptions {
-	/** Count `a | b` as complex too. Default: false (pipelines allowed). */
-	blockPipelines?: boolean;
 	/** Recursion depth for nested shells; internal. */
 	depth?: number;
 }
 
 interface Analysis {
 	findings: Finding[];
-	/** Commands the text holds, counting `;`/`&&`/`||`/newline splits. */
+	/** Commands the text holds, counting `;`/`&&`/`||`/`|`/newline splits. */
 	commandCount: number;
 	/** `|` and `|&` occurrences. */
 	pipelineCount: number;
 	/** True when the guard should react. */
 	complex: boolean;
-	/** Findings the guard reacts to, i.e. hard ones plus pipelines when enabled. */
-	blocking: Finding[];
 }
 
 /** Words that are only meaningful as shell syntax at the start of a command. */
@@ -142,7 +139,6 @@ const DETAIL_LIMIT = 4;
 /** Analyze one `command` string. Pure: no fs, no env, no I/O. */
 function analyzeShell(input: string, options: AnalysisOptions = {}): Analysis {
 	const depth = options.depth ?? 0;
-	const blockPipelines = options.blockPipelines ?? false;
 
 	// Trailing whitespace and line continuations are formatting, not structure.
 	const text = input.replace(/\\[ \t]*\r?\n/g, " ").replace(/\s+$/, "");
@@ -150,7 +146,7 @@ function analyzeShell(input: string, options: AnalysisOptions = {}): Analysis {
 	const findings: Finding[] = [];
 	const seen = new Map<FindingKind, string>();
 	const add = (kind: FindingKind, detail: string) => {
-		if (!seen.has(kind)) findings.push({ kind, detail, soft: kind === "pipeline" });
+		if (!seen.has(kind)) findings.push({ kind, detail });
 		seen.set(kind, detail);
 	};
 
@@ -315,7 +311,6 @@ function analyzeShell(input: string, options: AnalysisOptions = {}): Analysis {
 			} else {
 				pipelines++;
 				if (text[i + 1] === "&") i++;
-				add("pipeline", "pipe into the next command");
 				atCommandPos = true;
 			}
 			prevMeaningful = c;
@@ -367,7 +362,7 @@ function analyzeShell(input: string, options: AnalysisOptions = {}): Analysis {
 		for (const nested of nestedShellArgs(text)) {
 			const inner = analyzeShell(nested.code, { ...options, depth: depth + 1 });
 			if (inner.complex) {
-				const what = inner.blocking.map((f) => f.detail).slice(0, DETAIL_LIMIT).join(", ");
+				const what = inner.findings.map((f) => f.detail).slice(0, DETAIL_LIMIT).join(", ");
 				add("nested-shell", `\`${nested.shell} -c\` runs a program using ${what}`);
 			}
 		}
@@ -378,15 +373,19 @@ function analyzeShell(input: string, options: AnalysisOptions = {}): Analysis {
 		const how = [listOps > 0 ? "`;`/`&&`/`||`" : "", newlines > 0 ? "newlines" : ""].filter(Boolean).join(" and ");
 		add("multi-command", `${how} join ${commandCount} commands`);
 	}
-	if (pipelines > 0 && !seen.has("pipeline")) add("pipeline", "pipe into the next command");
-
-	const blocking = findings.filter((f) => blockPipelines || !f.soft);
+	// Pipes are decided last because the wording depends on how many there were: one
+	// pipe reads as a habit, four read as a program.
+	if (pipelines > 0) {
+		add(
+			"pipeline",
+			pipelines > 1 ? `${pipelines} pipes chain ${pipelines + 1} commands` : "pipe into the next command",
+		);
+	}
 	return {
 		findings,
 		commandCount,
 		pipelineCount: pipelines,
-		complex: blocking.length > 0,
-		blocking,
+		complex: findings.length > 0,
 	};
 }
 
@@ -477,25 +476,32 @@ const ENV_OFF = new Set(["off", "0", "false", "no"]);
 function guidelineBlock(): string {
 	return (
 		`${GUIDELINE_HEADING}\n\n` +
-		"A `bash` call is ONE command with its arguments. A call that composes several steps is rejected " +
-		"before it runs, and re-spelling it in shell is rejected again. Put complex logic in codemode: one " +
-		"plain command per `tools.bash` call, composition in JavaScript."
+		"A `bash` call runs one command with its arguments, including `tools.bash` calls made from a " +
+		"codemode script. Anything that composes steps — a pipe, `;`, `&&`, `$(…)`, several lines — is " +
+		"rejected before it runs. Put the composition in codemode: one command per call, then branch, loop, " +
+		"filter and join the returned output in JavaScript."
 	);
 }
 
-/** What the model sees: the rule, and where the work goes. */
-function blockReason(toolName: string): string {
-	return (
-		`Blocked by codemode-first: a ${toolName} call is ONE plain command; this one composes several steps. ` +
-		"Re-spelling it in shell will be blocked again. Put the logic in codemode — one plain command per " +
-		"`tools.bash` call, composition in JavaScript."
-	);
+/**
+ * What the model sees: the rule, and where the work goes. A nested call is already inside
+ * codemode, so it is told to split the shell up rather than to go and find codemode.
+ */
+function blockReason(nested: boolean): string {
+	return nested
+		? "Blocked by codemode-first: a `tools.bash` call runs one command with its arguments; this one " +
+			"composes several steps. The rejection throws and aborts the script, so give every call a single " +
+			"plain command and compose the results in JavaScript."
+		: "Blocked by codemode-first: a `bash` call runs one command with its arguments; this one composes " +
+			"several steps. Rewriting it in shell will be blocked again — put the composition in codemode, " +
+			"one command per call.";
 }
 
 export default function (pi: ExtensionAPI) {
 	const envOff = ENV_OFF.has((process.env.PI_CODEMODE_FIRST ?? "").trim().toLowerCase());
 	let enabled = !envOff;
 	let blocked = 0;
+	let blockedNested = 0;
 	let lastNotice = 0;
 
 	/** Blocking is only fair while there is somewhere else to put the composition. */
@@ -519,9 +525,9 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("tool_call", async (event, ctx) => {
 		if (!enabled || event.toolName !== "bash") return undefined;
-		// A codemode script calling `tools.bash` composes on purpose; this guard
-		// pushed it there, so it must not fight it.
-		if (event.parentToolCallId) return undefined;
+		// Nested calls are checked too: `tools.bash` inside a codemode script is where the
+		// shell program goes to hide once top-level chains are blocked.
+		const nested = Boolean(event.parentToolCallId);
 		if (!codemodeAvailable()) return undefined;
 
 		const command = (event.input as Record<string, unknown>).command;
@@ -531,12 +537,17 @@ export default function (pi: ExtensionAPI) {
 		if (!analysis.complex) return undefined;
 
 		blocked++;
+		if (nested) blockedNested++;
 		const now = Date.now();
 		if (now - lastNotice > 2000) {
 			lastNotice = now;
-			ctx.ui.notify(`Blocked a complex bash call (#${blocked}): ${describeFindings(analysis.blocking)}`, "warning");
+			ctx.ui.notify(
+				`Blocked a complex bash call${nested ? " inside codemode" : ""} (#${blocked}): ` +
+					describeFindings(analysis.findings),
+				"warning",
+			);
 		}
-		return { block: true, reason: blockReason(event.toolName) };
+		return { block: true, reason: blockReason(nested) };
 	});
 
 	const commandDefinition: Omit<RegisteredCommand, "name" | "sourceInfo"> = {
@@ -559,10 +570,10 @@ export default function (pi: ExtensionAPI) {
 			}
 			ctx.ui.notify(
 				`codemode-first is ${enabled ? "on" : "off"}${offReason()}\n` +
-					`blocked so far: ${blocked}\n` +
+					`blocked so far: ${blocked}${blockedNested > 0 ? ` (${blockedNested} inside codemode)` : ""}\n` +
 					`codemode tool: ${codemodeAvailable() ? "active" : "not active — guard idle"}\n` +
-					`checks \`bash\` only; a call made from inside a codemode script is never checked; ` +
-					`one pipe is allowed`,
+					`checks every \`bash\` call, including \`tools.bash\` made from a codemode script; ` +
+					`any pipe counts as composition`,
 				"info",
 			);
 		},
