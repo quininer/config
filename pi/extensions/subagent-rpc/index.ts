@@ -27,7 +27,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Text, type OverlayHandle, type OverlayOptions } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
-import { FULLSCREEN_MARGINS, SubagentManager } from "./manager-ui.ts";
+import { FULLSCREEN_MARGINS, itemPrefix, SubagentManager } from "./manager-ui.ts";
 import {
 	canResume,
 	deliverMessage,
@@ -41,7 +41,7 @@ import {
 	statusLineParts,
 	WAKE_TEXT_LIMIT,
 } from "./registry.ts";
-import { currentDepth, ellipsize, formatUsage, isFinished, oneLine, statusMeta, type UsageStats } from "./utils.ts";
+import { currentDepth, ellipsize, formatDuration, formatUsage, isFinished, oneLine, statusMeta, type UsageStats } from "./utils.ts";
 
 const TOOL_NAME = "subagent";
 const SETTLED_MESSAGE_TYPE = "subagent-settled";
@@ -81,6 +81,10 @@ interface Snapshot {
 	lastError?: string;
 	resumable: boolean;
 	retrying: boolean;
+	typing: boolean;
+	queued: number;
+	dialogs: number;
+	lastActivityAt: number;
 }
 
 interface ToolDetails {
@@ -144,6 +148,10 @@ function snapshot(subagent: Subagent): Snapshot {
 		...(subagent.lastError ? { lastError: oneLine(subagent.lastError, 400) } : {}),
 		resumable: canResume(subagent),
 		retrying: subagent.retrying,
+		typing: subagent.typing,
+		queued: subagent.queuedSteering + subagent.queuedFollowUp,
+		dialogs: subagent.pendingDialogs,
+		lastActivityAt: subagent.lastActivityAt,
 	};
 }
 
@@ -218,11 +226,11 @@ export default function subagentRpcExtension(pi: ExtensionAPI): void {
 	function refreshStatusLine(): void {
 		const ctx = lastCtx;
 		if (!ctx?.hasUI) return;
-		const parts = registry ? statusLineParts(registry.list()) : [];
-		const text =
-			parts.length === 0
-				? undefined
-				: parts.map((part) => ctx.ui.theme.fg(part.tone, part.text)).join(ctx.ui.theme.fg("muted", " · "));
+		// The footer is one shared line, so names only go in when there is room for them.
+		const columns = process.stdout.columns ?? 80;
+		const nameBudget = columns >= 110 ? 24 : columns >= 80 ? 14 : 0;
+		const parts = registry ? statusLineParts(registry.list(), Date.now(), { nameBudget }) : [];
+		const text = parts.length === 0 ? undefined : parts.map((part) => ctx.ui.theme.fg(part.tone, part.text)).join(" ");
 		if (text === statusText) return; // don't repaint the footer on every child event
 		statusText = text;
 		statusShown = text !== undefined;
@@ -548,9 +556,20 @@ export default function subagentRpcExtension(pi: ExtensionAPI): void {
 					theme.fg("dim", `${agent.id} ${formatUsage(agent.usage, agent.model)}`.trim());
 				lines.push(header);
 				lines.push(theme.fg("muted", `  task: ${oneLine(agent.task, 110)}`));
+				// While it runs, the state line is what the parent actually wants to know.
+				const state = [
+					agent.typing ? "typing" : agent.streaming ? "working" : "",
+					agent.retrying ? "retrying" : "",
+					agent.queued > 0 ? `${agent.queued} queued` : "",
+					agent.dialogs > 0 ? `${agent.dialogs} dialog unanswered` : "",
+					isFinished(agent.status as Subagent["status"]) ? "" : `silent ${formatDuration(Date.now() - agent.lastActivityAt)}`,
+				]
+					.filter(Boolean)
+					.join(" · ");
+				if (state) lines.push(theme.fg("dim", `  ${state}`));
 				for (const item of agent.items.slice(-COLLAPSED_ITEM_COUNT)) {
-					const tone = item.kind === "error" ? "error" : item.kind === "text" ? "toolOutput" : "muted";
-					lines.push(theme.fg(tone, `  ${oneLine(item.text, 110)}`));
+					const { marker, tone } = itemPrefix(item.kind);
+					lines.push(theme.fg(tone, `  ${marker} ${oneLine(item.text, 108)}`));
 				}
 				if (agent.resumable) lines.push(theme.fg("warning", `  ↻ resumable: /subagent-send ${agent.id} <text>`));
 				else if (agent.lastAssistantText.trim()) {
@@ -574,13 +593,23 @@ export default function subagentRpcExtension(pi: ExtensionAPI): void {
 		const container = new Container();
 
 		const usage = agent ? formatUsage(agent.usage, agent.model) : "";
+		const runtime = agent
+			? [
+					agent.endedAt
+						? `${formatDuration(agent.endedAt - agent.startedAt)} elapsed`
+						: `${formatDuration(Date.now() - agent.startedAt)} so far`,
+					agent.dialogs > 0 ? `${agent.dialogs} dialog unanswered` : "",
+				]
+					.filter(Boolean)
+					.join(" · ")
+			: "";
 		container.addChild(
 			new Text(
 				`${theme.fg(tone, `${meta.icon} subagent ${agent?.id ?? ""} ${meta.label}`)} ` +
 					theme.fg("accent", agent?.name ?? "") +
 					(agent?.readOnly ? " " + theme.fg("muted", "[read-only]") : "") +
 					" " +
-					theme.fg("dim", [usage, agent?.transcriptPath ? ellipsize(agent.transcriptPath, 40) : ""].filter(Boolean).join(" · ")),
+					theme.fg("dim", [usage, runtime, agent?.transcriptPath ? ellipsize(agent.transcriptPath, 40) : ""].filter(Boolean).join(" · ")),
 				pad,
 				0,
 			),

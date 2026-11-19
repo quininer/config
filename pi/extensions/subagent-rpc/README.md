@@ -94,8 +94,17 @@ subagent{action:"start", task:"review the parser for edge cases", readOnly:true}
 
 ## Watching them
 
-Running subagents show up in the **footer status line** (`⏳ sub 2 name…`,
-`⚑ 1 dialog`, `✗ 1 failed ↻`) without opening anything.
+Subagents show up in the **footer status line** without opening anything. The
+footer is one line shared with every other extension, so the format stays terse:
+a `sub` label, then one flag per state.
+
+| Footer | Meaning |
+| --- | --- |
+| `sub ⏳3` | 3 running, none producing tokens right now |
+| `sub ▌2` | 2 running, at least one streaming (`↻` in place of `▌` means one is retrying) |
+| `sub ▌ refactor footer 4m00s` | exactly one running, so its name and elapsed time fit (names are dropped on narrow terminals) |
+| `sub ⚑1` | 1 dialog waiting for an answer in this terminal |
+| `sub ✗1f↻` | 1 failed/aborted in the last 10 minutes, `↻` when all of them are resumable |
 
 - `/subagent` — open the live view; `/subagent <id>` jumps to one subagent,
   `/subagent ls` prints a text list
@@ -106,34 +115,52 @@ Running subagents show up in the **footer status line** (`⏳ sub 2 name…`,
 
 ### List keys
 
+A row is `status · name · id · ro · elapsed · activity · ↻ · cost · context`, and
+the name absorbs whatever columns are left so nothing else gets cut off.
+
 | Key | Action |
 | --- | --- |
 | `↑`/`↓`, `PgUp`/`PgDn` | select |
 | `Enter` | open detail |
 | `k` | interrupt selected |
 | `R` | resume a failed/aborted task |
-| `d` | remove record |
-| `c` | show transcript path |
+| `d` | drop the record (the child keeps running until it settles) |
+| `c` | show the transcript path |
+| `h` | include finished subagents |
 | `f` | toggle fullscreen |
-| `h` | toggle history |
 | `x` / `Esc` | close |
 
 ### Detail keys
 
-The detail body has three views, so the whole instruction and the whole reply are
-readable and not just the one-line summary:
+The detail view is four pages, so a record is readable instead of summarized:
 
-| Key | Action |
+| Key | Page |
 | --- | --- |
-| `t` / `p` / `o` | activity tail / **full instruction** / **full reply** |
-| `↑`/`↓`, `PgUp`/`PgDn` | scroll the current view |
-| `r` | resume tail-follow (activity view) |
-| `w` | wrap ⇄ truncate (in every view) |
+| `t` | **activity log** — every recorded item, newest at the bottom |
+| `i` | **overview** — the whole record: state, child/model/cwd/tools/sandbox, usage, output, problems, plus pointers to the task, the reply and the transcript |
+| `p` | **instruction** — the task text exactly as sent |
+| `o` | **reply** — the whole final answer plus the stderr tail |
+| `Tab` | cycle the four pages |
+| `↑`/`↓`, `PgUp`/`PgDn` | scroll the current page |
+| `r` | follow the activity log again (scrolling away pauses it, and a line at the bottom says where you stopped) |
+| `w` | wrap ⇄ truncate |
 | `m` | message this subagent (continues the task if it stopped early) |
 | `R` | resume a failed/aborted task |
 | `k` | interrupt |
-| `d` | remove record |
-| `←` | back to list |
+| `d` | drop the record |
+| `←` | back to the list |
+
+Above the pages, three or four header lines carry the state that matters at a
+glance: status, `▌ typing` / `⇄ 1 queued` / `⚑ 1 dialog` / `↻ resumable`, id, pid,
+elapsed, the task in one line, and usage · model · cost. On a narrow terminal the
+parts that do not fit are dropped instead of chopped in half.
+
+In the activity log every line starts with its time since start (`+4m02s`) and a
+kind marker (`❯` tool call, `↳` tool result, `▎` assistant text, `→` what you
+sent, `⇄` queue, `⚑` dialog, `·` system, `✗` error), with wrapped lines indented
+under their item. Assistant text is previewed — three lines, then
+`… N more lines - o reads the reply` — because one long answer used to push the
+whole log off screen.
 
 ## Transcripts
 
@@ -188,7 +215,16 @@ last, after the tmpfs mounts that would otherwise cover it.
 
 To type-check the sources against an installed pi, use a `tsconfig.json` with
 `allowImportingTsExtensions`, `strict`, and `paths` pointing at
-`/usr/lib/node_modules/pi/packages/*/dist/index.d.ts`.
+`/usr/lib/node_modules/pi/packages/*/dist/index.d.ts`. Without a `tsc` at hand,
+`deno check --no-lock --allow-import *.ts` catches real mistakes in these files
+even though the pi packages do not resolve — ignore its `not a dependency` and
+implicit-`any` noise and read the rest.
+
+Layout changes in the view are reviewable without a live child: render
+`SubagentManager` against fake `Subagent` records and print the lines with the
+ANSI stripped (`stripTerminalSequences`) — one screen per view, at a wide and a
+narrow width, plus the footer text from `statusLineParts`. Wrapping, column
+budgets and the empty states are exactly what that catches.
 
 ## Limitations
 

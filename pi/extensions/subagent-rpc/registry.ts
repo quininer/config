@@ -42,7 +42,9 @@ import {
 	emptyUsage,
 	errorSignalFromRetry,
 	errorSignalFromStop,
+	formatDuration,
 	formatToolCallText,
+	formatUsage,
 	inheritableCliFlags,
 	isFinished,
 	isResumable,
@@ -59,6 +61,8 @@ const MAX_TOTAL_ITEM_CHARS = 400_000;
 const MAX_STDERR_CHARS = 32 * 1024;
 /** How long a failed/aborted subagent keeps nagging in the footer status line. */
 const STATUS_LINE_MEMORY_MS = 10 * 60_000;
+/** Columns the footer may spend on one running subagent's name before counts take over. */
+const STATUS_LINE_NAME_BUDGET = 22;
 export const MAX_RUNNING_SUBAGENTS = 8;
 /**
  * Tool selection for a read-only subagent. `bash` stays, because research and
@@ -121,6 +125,9 @@ export interface Subagent {
 	lastActivityAt: number;
 	outputChars: number;
 	pendingDialogs: number;
+	/** Messages the child has queued but not consumed yet (`queue_update`). */
+	queuedSteering: number;
+	queuedFollowUp: number;
 	/** Inspection-only child: sandboxed, and no state-changing tools. */
 	readOnly: boolean;
 	/** Kernel-level enforcement backing a read-only child, e.g. "bwrap". */
@@ -376,6 +383,8 @@ export class SubagentRegistry {
 			typing: false,
 			lastActivityAt: Date.now(),
 			outputChars: 0,
+			queuedSteering: 0,
+			queuedFollowUp: 0,
 			pendingDialogs: 0,
 			cleanup,
 		};
@@ -444,7 +453,7 @@ export class SubagentRegistry {
 		try {
 			const accepted = await proc.prompt(task);
 			subagent.status = "running";
-			this.push(subagent, "input", `→ prompt ${accepted?.disposition ?? "started"}`);
+			this.push(subagent, "input", `prompt ${accepted?.disposition ?? "started"}`);
 		} catch (error) {
 			subagent.status = "failed";
 			subagent.note = error instanceof Error ? error.message : String(error);
@@ -483,7 +492,7 @@ export class SubagentRegistry {
 		} else {
 			disposition = (await subagent.proc.prompt(text)).disposition ?? "started";
 		}
-		this.push(subagent, "input", `→ ${resolved.replace("_", "-")} ${disposition}: ${oneLine(text, 160)}`);
+		this.push(subagent, "input", `${resolved.replace("_", "-")} ${disposition}: ${oneLine(text, 160)}`);
 		return disposition;
 	}
 
@@ -518,8 +527,8 @@ export class SubagentRegistry {
 		subagent.note = undefined;
 		subagent.lastError = undefined;
 		subagent.retrying = false;
-		this.push(subagent, "system", "↻ resumed (child kept its context)");
-		this.push(subagent, "input", `→ resume ${disposition}: ${oneLine(text, 160)}`);
+		this.push(subagent, "system", "resumed in place (the child kept its context)");
+		this.push(subagent, "input", `resume ${disposition}: ${oneLine(text, 160)}`);
 		return `resumed (${disposition})`;
 	}
 
@@ -608,7 +617,7 @@ export class SubagentRegistry {
 			case "agent_start":
 				subagent.status = "running";
 				subagent.streaming = true;
-				this.push(subagent, "system", "▶ run started");
+				this.push(subagent, "system", "run started");
 				break;
 			case "turn_start":
 				subagent.turnCount++;
@@ -629,14 +638,18 @@ export class SubagentRegistry {
 				break;
 			case "tool_execution_end": {
 				const duration = typeof event.durationMs === "number" ? ` (${Math.round(event.durationMs)}ms)` : "";
-				const flag = event.isError ? " ✗" : "";
-				this.push(subagent, "result", `↳ ${String(event.toolName ?? "tool")} done${duration}${flag}`);
+				const flag = event.isError ? " failed" : "";
+				this.push(subagent, "result", `${String(event.toolName ?? "tool")} done${duration}${flag}`);
 				break;
 			}
 			case "queue_update": {
 				const steering = Array.isArray(event.steering) ? event.steering.length : 0;
 				const followUp = Array.isArray(event.followUp) ? event.followUp.length : 0;
-				this.push(subagent, "queue", `queue: steering=${steering} followUp=${followUp}`);
+				// The child re-broadcasts an unchanged queue; only a change is news.
+				if (steering === subagent.queuedSteering && followUp === subagent.queuedFollowUp) break;
+				subagent.queuedSteering = steering;
+				subagent.queuedFollowUp = followUp;
+				this.push(subagent, "queue", `queued: ${steering} steering, ${followUp} follow-up`);
 				break;
 			}
 			case "compaction_start":
@@ -651,7 +664,7 @@ export class SubagentRegistry {
 				this.push(
 					subagent,
 					"system",
-					`↻ provider error, retry ${event.attempt ?? 1}/${event.maxAttempts ?? "?"} in ${delay}s: ${oneLine(subagent.lastError ?? "provider error", 200)}`,
+					`provider error, retry ${event.attempt ?? 1}/${event.maxAttempts ?? "?"} in ${delay}s: ${oneLine(subagent.lastError ?? "provider error", 200)}`,
 				);
 				break;
 			}
@@ -660,10 +673,10 @@ export class SubagentRegistry {
 				const signal = errorSignalFromRetry(event);
 				if (signal.kind === "clear") {
 					subagent.lastError = undefined;
-					this.push(subagent, "system", `✓ recovered after ${event.attempt ?? 1} retries`);
+					this.push(subagent, "system", `recovered after ${event.attempt ?? 1} retries`);
 				} else if (signal.kind === "error") {
 					subagent.lastError = signal.text;
-					this.push(subagent, "error", `✗ giving up after ${event.attempt ?? 1} retries: ${oneLine(signal.text, 300)}`);
+					this.push(subagent, "error", `giving up after ${event.attempt ?? 1} retries: ${oneLine(signal.text, 300)}`);
 				}
 				break;
 			}
@@ -732,7 +745,7 @@ export class SubagentRegistry {
 
 		if (message.role === "toolResult") {
 			const firstLine = this.toolResultSummary(message);
-			if (firstLine) this.push(subagent, "result", `↳ ${firstLine}`);
+			if (firstLine) this.push(subagent, "result", firstLine);
 		}
 	}
 
@@ -775,11 +788,14 @@ export class SubagentRegistry {
 			subagent,
 			status === "settled" ? "system" : "error",
 			status === "settled"
-				? "✓ task settled"
+				? "task settled"
 				: status === "aborted"
-					? "⊘ task aborted"
-					: `✗ task failed: ${subagent.note}`,
+					? "task aborted"
+					: `task failed: ${subagent.note}`,
 		);
+
+		subagent.queuedSteering = 0;
+		subagent.queuedFollowUp = 0;
 
 		if (!subagent.lastAssistantText) {
 			const lastText = [...subagent.items].reverse().find((item) => item.kind === "text");
@@ -853,7 +869,7 @@ export class SubagentRegistry {
 		this.push(
 			subagent,
 			"ui",
-			`⚠ child asked (${request.method}): ${oneLine(String(request.title ?? request.message ?? ""), 200)}`,
+			`child asked (${request.method}): ${oneLine(String(request.title ?? request.message ?? ""), 200)}`,
 		);
 
 		const key = `${subagent.id}:${request.id}`;
@@ -871,7 +887,7 @@ export class SubagentRegistry {
 		this.answeredDialogs.add(key);
 		const answer = payload ?? { cancelled: true };
 		subagent.proc?.answerUi(request.id, answer);
-		this.push(subagent, "ui", `↳ answered ${request.method}: ${ellipsize(JSON.stringify(answer) ?? "{}", 120)}`);
+		this.push(subagent, "ui", `answered ${request.method}: ${ellipsize(JSON.stringify(answer) ?? "{}", 120)}`);
 	}
 
 	// ------------------------------------------------------------------ records
@@ -907,8 +923,17 @@ export function formatStatusText(subagent: Subagent, tailItems: number): string 
 	lines.push(meta);
 	lines.push(`task: ${oneLine(subagent.task, 200)}`);
 	if (subagent.model) lines.push(`model: ${subagent.model}${subagent.thinkingLevel ? ` thinking=${subagent.thinkingLevel}` : ""}`);
+	lines.push(`usage: ${formatUsage(subagent.usage)}`);
+	const queued = subagent.queuedSteering + subagent.queuedFollowUp;
 	lines.push(
-		`usage: ${subagent.usage.turns || subagent.turnCount} turns ↑${subagent.usage.input} ↓${subagent.usage.output} $${subagent.usage.cost.toFixed(4)} ctx:${subagent.usage.contextTokens}`,
+		`runtime: ${formatDuration((subagent.endedAt ?? Date.now()) - subagent.startedAt)} elapsed` +
+			(isFinished(subagent.status)
+				? ""
+				: ` · ${subagent.typing ? "typing" : subagent.streaming ? "working" : "idle"}` +
+					` · last output ${formatDuration(Date.now() - subagent.lastActivityAt)} ago`) +
+			(queued > 0 ? ` · ${queued} queued` : "") +
+			(subagent.pendingDialogs > 0 ? ` · ${subagent.pendingDialogs} dialog unanswered` : "") +
+			(subagent.retrying ? " · retrying" : ""),
 	);
 	if (subagent.readOnly) {
 		lines.push(
@@ -953,13 +978,22 @@ export async function deliverMessage(store: SubagentRegistry, id: string, text: 
 	return `sent (${disposition}) to ${id}`;
 }
 
+/** Extra knobs for the footer status line. */
+export interface StatusLineOptions {
+	/** Visible columns to spend on one running subagent's name; 0 hides names entirely. */
+	nameBudget?: number;
+}
+
 /**
- * Segments for the parent's footer status line: running/typing counts, waiting
- * dialogs, and recent failures. Empty when there is nothing to report.
+ * Segments for the parent's footer status line, which shares one terminal line
+ * with every other extension: keep it short and let `/subagent` carry the detail.
+ * The leading `sub` labels the group, so the flags after it stay terse:
+ * `sub ⏳3 ⚑1 ✗1↻`, or `sub ⏳ refactor footer 4m00s` when a single one runs.
  */
-export function statusLineParts(agents: Subagent[], now = Date.now()): StatusLinePart[] {
+export function statusLineParts(agents: Subagent[], now = Date.now(), options: StatusLineOptions = {}): StatusLinePart[] {
+	const nameBudget = Math.max(0, options.nameBudget ?? STATUS_LINE_NAME_BUDGET);
 	const running = agents.filter((agent) => !isFinished(agent.status));
-	const dialogs = agents.filter((agent) => agent.pendingDialogs > 0);
+	const dialogs = agents.reduce((total, agent) => total + agent.pendingDialogs, 0);
 	// Failures stop nagging once they are older than this window.
 	const recent = agents.filter(
 		(agent) =>
@@ -969,24 +1003,25 @@ export function statusLineParts(agents: Subagent[], now = Date.now()): StatusLin
 
 	const parts: StatusLinePart[] = [];
 	if (running.length > 0) {
-		const names = running
-			.slice(0, 2)
-			.map((agent) => oneLine(agent.name, 20))
-			.join(", ");
-		const busy = running.some((agent) => agent.typing || agent.retrying);
-		parts.push({
-			text: `${busy ? "▌" : "⏳"} sub ${running.length}${names ? ` ${names}` : ""}${running.length > 2 ? "…" : ""}`,
-			tone: running.every((agent) => agent.retrying) ? "warning" : "accent",
-		});
+		// Busy first: a spinner means the child is actually producing something.
+		const icon = running.some((agent) => agent.typing) ? "▌" : running.some((agent) => agent.retrying) ? "↻" : "⏳";
+		let tail = `${running.length}`;
+		if (running.length === 1 && nameBudget > 0) {
+			const only = running[0]!;
+			tail = ` ${oneLine(only.name, nameBudget)}`;
+			if (nameBudget >= 14) tail += ` ${formatDuration((only.endedAt ?? now) - only.startedAt)}`;
+		}
+		parts.push({ text: `${icon}${tail}`, tone: running.every((agent) => agent.retrying) ? "warning" : "accent" });
 	}
-	if (dialogs.length > 0) parts.push({ text: `⚑ ${dialogs.length} dialog`, tone: "warning" });
+	if (dialogs > 0) parts.push({ text: `⚑${dialogs}`, tone: "warning" });
 	if (recent.length > 0) {
 		const failed = recent.filter((agent) => agent.status === "failed").length;
 		const aborted = recent.length - failed;
-		const bits = [failed ? `${failed} failed` : "", aborted ? `${aborted} aborted` : ""].filter(Boolean).join(" + ");
-		parts.push({ text: `✗ ${bits}${recent.every(canResume) ? " ↻" : ""}`, tone: "error" });
+		const bits = [failed ? `${failed}f` : "", aborted ? `${failed > 0 ? "+" : ""}${aborted}a` : ""].filter(Boolean).join("");
+		parts.push({ text: `✗${bits}${recent.every(canResume) ? "↻" : ""}`, tone: "error" });
 	}
-	return parts;
+	if (parts.length === 0) return [];
+	return [{ text: "sub", tone: "muted" }, ...parts];
 }
 
 /** Compact one-line-per-agent listing for the model. */
@@ -995,6 +1030,7 @@ export function formatListText(agents: Subagent[]): string {
 	return agents
 		.map((agent) => {
 			const elapsed = Math.round(((agent.endedAt ?? Date.now()) - agent.startedAt) / 1000);
+			const queued = agent.queuedSteering + agent.queuedFollowUp;
 			const last = [...agent.items].reverse().find((item) => item.kind === "tool" || item.kind === "text");
 			return [
 				`${agent.id} ${agent.status.padEnd(8)} ${oneLine(agent.name, 30)}`,
@@ -1003,7 +1039,9 @@ export function formatListText(agents: Subagent[]): string {
 				`${elapsed}s`,
 				agent.readOnly ? "ro" : "",
 				agent.model ?? "",
-				agent.streaming ? "streaming" : "",
+				agent.streaming ? (agent.typing ? "typing" : "streaming") : "",
+				queued > 0 ? `${queued} queued` : "",
+				agent.pendingDialogs > 0 ? `${agent.pendingDialogs} dialog unanswered` : "",
 				canResume(agent) ? "resumable" : "",
 				last ? `· ${oneLine(last.text, 80)}` : "",
 			]
